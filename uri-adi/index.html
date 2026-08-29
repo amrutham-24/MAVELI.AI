@@ -25,6 +25,8 @@
     timerActive: false,
     hitsRequired: 3,
     hitsCurrent: 0,
+    missesAllowed: 3,
+    missesCurrent: 0,
     preset: { timeLimit: 30, swingSpeed: 2.2, swingAmplitude: 34, centerThreshold: 0.38 },
     endChallenge: function () {}
   };
@@ -374,20 +376,51 @@
       }
 
       // Quest 2 Physical Swing or Aim Hit Detection
-      if (time - this.lastVRHitTime > 220) {
+      if (time - this.lastVRHitTime > 280) {
         const isSwingingHard = velocity > 1.2;
-        const isNearPot = minDist < 1.6;
-        const isDirectTouch = minDist < 0.95;
-        const isPotInCenterWindow = Math.abs(this.potWorldPos.x) <= (state.preset.centerThreshold + 0.35);
+        const isDirectTouch = minDist < 0.88;
+        const isPotInMiddle = Math.abs(this.potWorldPos.x) <= state.preset.centerThreshold;
 
-        if (isDirectTouch || (isIntersectingPot && isPotInCenterWindow) || (isSwingingHard && isNearPot && isPotInCenterWindow)) {
+        if (isDirectTouch || (isSwingingHard && minDist < 1.6)) {
           this.lastVRHitTime = time;
-          triggerControllerHaptics();
-          registerPotHit();
+          if (isPotInMiddle) {
+            triggerControllerHaptics(1.0, 220);
+            registerPotHit();
+          } else {
+            registerPotMiss();
+          }
         }
       }
     }
   });
+
+  // Miss Handler - Consumes a strike/chance if player swings when pot is not in the middle
+  function registerPotMiss() {
+    const state = window.MAYALI;
+    if (state.resolved || !state.timerActive) return;
+
+    const now = Date.now();
+    if (now - lastHitTimeDebounce < 350) return;
+    lastHitTimeDebounce = now;
+
+    state.missesCurrent += 1;
+    const remainingMisses = state.missesAllowed - state.missesCurrent;
+
+    SoundFX.playChendaBeat();
+    triggerControllerHaptics(0.4, 140);
+
+    const missesLabel = document.getElementById('missesCounterLabel');
+    if (missesLabel) missesLabel.textContent = `Chances Left: ${remainingMisses}/${state.missesAllowed}`;
+
+    if (state.missesCurrent >= state.missesAllowed) {
+      window.showMessage(`❌ OUT OF CHANCES! (${state.missesAllowed}/${state.missesAllowed} Missed Swings)`, 2200);
+      state.endChallenge(false);
+    } else {
+      window.showMessage(`❌ MISSED! Pot was not in the middle! (${remainingMisses} chance${remainingMisses > 1 ? 's' : ''} left)`, 1300);
+    }
+  }
+
+  window.registerPotMiss = registerPotMiss;
 
   // Multi-Hit Handler with Impact Sound, Quest Haptics & Shard Shatter Animation
   function registerPotHit() {
@@ -693,9 +726,10 @@
     <a-sphere position="1.0 0 0" radius="0.05" color="#FF7F00"></a-sphere>
   </a-entity>
 
-  <!-- Eye-Level 3D Automatic Swinging Outer Pivot -->
+  <!-- Eye-Level 3D Automatic Swinging Outer Pivot in Full 3D Space -->
   <a-entity id="potPivot" position="0 3.2 -2.2"
-            animation__swing="property: rotation; from: 0 0 -34; to: 0 0 34; dir: alternate; loop: true; dur: 2200; easing: easeInOutSine">
+            animation__swingX="property: rotation; from: 0 0 -38; to: 0 0 38; dir: alternate; loop: true; dur: 2100; easing: easeInOutSine"
+            animation__swingZ="property: rotation; from: -15 0 0; to: 15 0 0; dir: alternate; loop: true; dur: 1650; easing: easeInOutSine">
     
     <!-- Vertical Rope Height Tug Pivot -->
     <a-entity id="potTug" position="0 0 0"
@@ -822,6 +856,27 @@
               stick-swing></a-entity>
   </a-entity>
 
+  <!-- 3D VR In-Headset End Menu Panel (Visible inside Meta Quest VR upon Win or Lose) -->
+  <a-entity id="vrEndMenu" position="0 1.65 -1.2" visible="false">
+    <a-plane width="1.65" height="1.1" color="#18110c" material="opacity: 0.92; transparent: true; roughness: 0.4" position="0 0 0">
+      <a-ring radius-inner="0.78" radius-outer="0.81" color="#FFD700" position="0 0 0.005"></a-ring>
+    </a-plane>
+    <a-text id="vrEndTitle" value="🏆 YOU WON!" align="center" color="#FFD700" width="4.8" position="0 0.32 0.02"></a-text>
+    <a-text id="vrEndSubtitle" value="അടി പൂക്കുറ്റി!! 🌸" align="center" color="#FFFFFF" width="3.4" position="0 0.14 0.02"></a-text>
+
+    <!-- 3D Play Again Button -->
+    <a-entity id="vrRestartBtn" class="clickable" position="-0.42 -0.22 0.03">
+      <a-plane width="0.68" height="0.24" color="#E8871E" material="roughness: 0.3" class="clickable"></a-plane>
+      <a-text value="🔄 Play Again" align="center" color="#FFFFFF" width="2.6" position="0 0 0.01"></a-text>
+    </a-entity>
+
+    <!-- 3D Exit VR Button -->
+    <a-entity id="vrExitBtn" class="clickable" position="0.42 -0.22 0.03">
+      <a-plane width="0.68" height="0.24" color="#B5502F" material="roughness: 0.3" class="clickable"></a-plane>
+      <a-text value="🚪 Exit VR" align="center" color="#FFFFFF" width="2.6" position="0 0 0.01"></a-text>
+    </a-entity>
+  </a-entity>
+
 </a-scene>
 
 <script>
@@ -903,6 +958,22 @@
     window.MAYALI.timerActive = false;
     clearInterval(timerHandle);
     stopSwingAnimations();
+
+    // Show 3D VR Menu inside Meta Quest VR headset
+    const vrEndMenu = document.querySelector('#vrEndMenu');
+    const vrEndTitle = document.querySelector('#vrEndTitle');
+    const vrEndSubtitle = document.querySelector('#vrEndSubtitle');
+
+    if (vrEndMenu) {
+      if (success) {
+        if (vrEndTitle) vrEndTitle.setAttribute('value', '🏆 YOU WON!');
+        if (vrEndSubtitle) vrEndSubtitle.setAttribute('value', 'അടി പൂക്കുറ്റി!! 🌸');
+      } else {
+        if (vrEndTitle) vrEndTitle.setAttribute('value', '❌ GAME OVER');
+        if (vrEndSubtitle) vrEndSubtitle.setAttribute('value', 'Out of Chances / Time Up!');
+      }
+      setTimeout(() => vrEndMenu.setAttribute('visible', true), success ? 1400 : 400);
+    }
 
     if (success) {
       // 1. Rope snaps & pot falls down to floor on 3rd hit
@@ -1050,7 +1121,7 @@
 
       }, 450);
     } else {
-      showMessage("Time's up! The pot survived.", 3500);
+      showMessage("❌ Game Over! Pot survived.", 3500);
     }
   }
 
@@ -1067,7 +1138,7 @@
   });
 
   const exitVrBtn = document.getElementById('exitVrBtn');
-  exitVrBtn.addEventListener('click', () => {
+  const exitVrAction = () => {
     const scene = document.querySelector('a-scene');
     if (scene && scene.is('vr-mode')) {
       scene.exitVR();
@@ -1075,7 +1146,25 @@
       document.getElementById('hud').style.display = 'none';
       document.getElementById('startOverlay').style.display = 'flex';
     }
-  });
+  };
+  exitVrBtn.addEventListener('click', exitVrAction);
+
+  // 3D VR In-Headset Button Click Handlers for Meta Quest controllers
+  const vrRestartBtn = document.querySelector('#vrRestartBtn');
+  if (vrRestartBtn) {
+    vrRestartBtn.addEventListener('click', () => window.location.reload());
+  }
+
+  const vrExitBtn = document.querySelector('#vrExitBtn');
+  if (vrExitBtn) {
+    vrExitBtn.addEventListener('click', () => {
+      const scene = document.querySelector('a-scene');
+      if (scene && scene.is('vr-mode')) {
+        scene.exitVR();
+      }
+      window.location.reload();
+    });
+  }
 
   // VR Strike action triggered by Quest 2 Controller button or physical motion
   function performStrikeFromVR(controllerEl) {
@@ -1088,26 +1177,13 @@
     const potWorldPos = new THREE.Vector3();
     potEntity.object3D.getWorldPosition(potWorldPos);
 
-    // Check raycaster or controller distance
-    let isIntersecting = false;
-    if (controllerEl && controllerEl.components && controllerEl.components.raycaster) {
-      const intersectedEls = controllerEl.components.raycaster.intersectedEls || [];
-      isIntersecting = intersectedEls.some(e => e.id === 'pot' || e.classList.contains('clickable') || (e.closest && e.closest('#pot')));
-    }
+    const isPotInMiddle = Math.abs(potWorldPos.x) <= window.MAYALI.preset.centerThreshold;
 
-    const controllerPos = new THREE.Vector3();
-    if (controllerEl && controllerEl.object3D) controllerEl.object3D.getWorldPosition(controllerPos);
-    const distToPot = controllerPos.distanceTo(potWorldPos);
-
-    const isPotNearMiddle = Math.abs(potWorldPos.x) <= (window.MAYALI.preset.centerThreshold + 0.35);
-
-    if (isIntersecting || distToPot < 2.0 || isPotNearMiddle) {
-      triggerControllerHaptics();
+    if (isPotInMiddle) {
+      triggerControllerHaptics(1.0, 220);
       window.registerPotHit();
     } else {
-      if (Date.now() - lastHitTimestamp > 1000) {
-        showMessage('❌ MISSED! Swing when pot is in the MIDDLE!', 800);
-      }
+      window.registerPotMiss();
     }
   }
 
@@ -1155,16 +1231,13 @@
       const potWorldPos = new THREE.Vector3();
       potEntity.object3D.getWorldPosition(potWorldPos);
 
-      // Pot alignment check: relaxed threshold for smooth VR / desktop experience
-      const isAlignedAtMiddle = Math.abs(potWorldPos.x) <= (window.MAYALI.preset.centerThreshold + 0.35);
+      const isAlignedAtMiddle = Math.abs(potWorldPos.x) <= window.MAYALI.preset.centerThreshold;
 
       if (isAlignedAtMiddle) {
-        triggerControllerHaptics();
+        triggerControllerHaptics(1.0, 220);
         window.registerPotHit();
       } else {
-        if (Date.now() - lastHitTimestamp > 1000) {
-          showMessage('❌ MISSED! Time your strike when pot is in the MIDDLE!', 800);
-        }
+        window.registerPotMiss();
       }
     }, 110);
   }
