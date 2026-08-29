@@ -1,0 +1,1108 @@
+<!DOCTYPE html>
+<html lang="ml">
+<head>
+<meta charset="UTF-8" />
+<title>അടി പൂക്കുറ്റി — Experience the Real Uri Adi through VR</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+<meta name="description" content="Experience the Real Uri Adi through VR. Time your bat strike precisely when the pot swings through the center position to shatter it in 3 successful hits!" />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🍯</text></svg>" />
+<script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+
+<script>
+  // Patch THREE.WebGLRenderer useLegacyLights deprecation warning
+  if (window.THREE && window.THREE.WebGLRenderer) {
+    Object.defineProperty(window.THREE.WebGLRenderer.prototype, 'useLegacyLights', {
+      get: function () { return this._useLegacyLights !== undefined ? this._useLegacyLights : false; },
+      set: function (val) { this._useLegacyLights = val; },
+      configurable: true,
+      enumerable: false
+    });
+  }
+
+  // Shared global game state with Skill-Based Center Window Physics
+  window.MAYALI = {
+    resolved: false,
+    timerActive: false,
+    hitsRequired: 3,
+    hitsCurrent: 0,
+    preset: { timeLimit: 30, swingSpeed: 2.2, swingAmplitude: 34, centerThreshold: 0.38 },
+    endChallenge: function () {}
+  };
+
+  // Web Audio API Synthesizer - Real Festival Sound Engine
+  const SoundFX = {
+    audioCtx: null,
+    init() {
+      if (!this.audioCtx) {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (AudioCtx) this.audioCtx = new AudioCtx();
+      }
+      if (this.audioCtx && this.audioCtx.state === 'suspended') {
+        this.audioCtx.resume();
+      }
+    },
+
+    playRopeCreak() {
+      this.init();
+      if (!this.audioCtx) return;
+      const ctx = this.audioCtx;
+      const now = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(130, now);
+      osc.frequency.linearRampToValueAtTime(170, now + 0.14);
+      osc.frequency.linearRampToValueAtTime(100, now + 0.28);
+
+      gain.gain.setValueAtTime(0.07, now);
+      gain.gain.exponentialRampToValueAtTime(0.003, now + 0.32);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.32);
+    },
+
+    playChendaBeat() {
+      this.init();
+      if (!this.audioCtx) return;
+      const ctx = this.audioCtx;
+      const now = ctx.currentTime;
+
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(260, now);
+      osc.frequency.exponentialRampToValueAtTime(60, now + 0.12);
+
+      gain.gain.setValueAtTime(0.35, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.12);
+    },
+
+    playSwing() {
+      this.init();
+      if (!this.audioCtx) return;
+      const ctx = this.audioCtx;
+      const now = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(220, now);
+      osc.frequency.exponentialRampToValueAtTime(650, now + 0.12);
+
+      gain.gain.setValueAtTime(0.25, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.12);
+    },
+
+    playImpactCrack() {
+      this.init();
+      if (!this.audioCtx) return;
+      const ctx = this.audioCtx;
+      const now = ctx.currentTime;
+
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(340, now);
+      osc.frequency.exponentialRampToValueAtTime(75, now + 0.16);
+
+      gain.gain.setValueAtTime(0.75, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.16);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.16);
+    },
+
+    playSmash() {
+      this.init();
+      if (!this.audioCtx) return;
+      const ctx = this.audioCtx;
+      const now = ctx.currentTime;
+
+      const bufferSize = ctx.sampleRate * 0.45;
+      const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (ctx.sampleRate * 0.05));
+      }
+      const noise = ctx.createBufferSource();
+      noise.buffer = buffer;
+
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'highpass';
+      filter.frequency.setValueAtTime(650, now);
+
+      const gain = ctx.createGain();
+      gain.gain.setValueAtTime(1.0, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.45);
+
+      noise.connect(filter);
+      filter.connect(gain);
+      gain.connect(ctx.destination);
+      noise.start(now);
+
+      const osc = ctx.createOscillator();
+      const oscGain = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(200, now);
+      osc.frequency.exponentialRampToValueAtTime(30, now + 0.3);
+      oscGain.gain.setValueAtTime(0.95, now);
+      oscGain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+
+      osc.connect(oscGain);
+      oscGain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.3);
+    },
+
+    playVictoryFanfare() {
+      this.init();
+      if (!this.audioCtx) return;
+      const ctx = this.audioCtx;
+      const notes = [523.25, 659.25, 783.99, 1046.50, 1318.51];
+      notes.forEach((freq, idx) => {
+        const now = ctx.currentTime + idx * 0.11;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(freq, now);
+        gain.gain.setValueAtTime(0.35, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.45);
+      });
+    }
+  };
+
+  // 2D Screen Continuous Party Popper & Flower Rain Engine
+  function triggerPartyPopper() {
+    let canvas = document.getElementById('victoryCanvas');
+    if (!canvas) {
+      canvas = document.createElement('canvas');
+      canvas.id = 'victoryCanvas';
+      canvas.style.position = 'fixed';
+      canvas.style.inset = '0';
+      canvas.style.width = '100vw';
+      canvas.style.height = '100vh';
+      canvas.style.pointerEvents = 'none';
+      canvas.style.zIndex = '90';
+      document.body.appendChild(canvas);
+    }
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    const particles = [];
+    const colors = ['#FFD700', '#FF4500', '#E8871E', '#FF69B4', '#00FF7F', '#00BFFF', '#FFFFFF'];
+    const shapes = ['circle', 'rect', 'petal'];
+
+    function spawnBurst() {
+      for (let i = 0; i < 90; i++) {
+        particles.push({
+          x: canvas.width / 2 + (Math.random() * 260 - 130),
+          y: canvas.height * 0.8,
+          vx: (Math.random() - 0.5) * 16,
+          vy: -Math.random() * 18 - 6,
+          size: Math.random() * 14 + 6,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          rotation: Math.random() * 360,
+          rSpeed: (Math.random() - 0.5) * 10,
+          shape: shapes[Math.floor(Math.random() * shapes.length)],
+          opacity: 1
+        });
+      }
+    }
+
+    spawnBurst();
+    const interval = setInterval(spawnBurst, 1200);
+    setTimeout(() => clearInterval(interval), 4000);
+
+    function animate() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      let alive = false;
+      particles.forEach(p => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += 0.32;
+        p.vx *= 0.98;
+        p.rotation += p.rSpeed;
+        p.opacity -= 0.0035;
+
+        if (p.opacity > 0) {
+          alive = true;
+          ctx.save();
+          ctx.globalAlpha = Math.max(p.opacity, 0);
+          ctx.translate(p.x, p.y);
+          ctx.rotate((p.rotation * Math.PI) / 180);
+          ctx.fillStyle = p.color;
+
+          if (p.shape === 'rect') {
+            ctx.fillRect(-p.size / 2, -p.size / 4, p.size, p.size / 2);
+          } else if (p.shape === 'circle') {
+            ctx.beginPath();
+            ctx.arc(0, 0, p.size / 2, 0, Math.PI * 2);
+            ctx.fill();
+          } else {
+            ctx.beginPath();
+            ctx.ellipse(0, 0, p.size / 2, p.size / 4, Math.PI / 4, 0, 2 * Math.PI);
+            ctx.fill();
+          }
+          ctx.restore();
+        }
+      });
+      if (alive || window.MAYALI.resolved) requestAnimationFrame(animate);
+    }
+    animate();
+  }
+
+  window.triggerPartyPopper = triggerPartyPopper;
+
+  let lastHitTimestamp = 0;
+  let lastHitTimeDebounce = 0;
+
+  function triggerControllerHaptics() {
+    try {
+      const hands = [document.querySelector('#rightHand'), document.querySelector('#leftHand')];
+      hands.forEach(hand => {
+        if (hand && hand.components && hand.components['oculus-touch-controls']) {
+          const controller = hand.components['oculus-touch-controls'].controller;
+          if (controller && controller.gamepad && controller.gamepad.hapticActuators && controller.gamepad.hapticActuators[0]) {
+            controller.gamepad.hapticActuators[0].pulse(0.95, 180);
+          }
+        }
+      });
+    } catch (e) {}
+  }
+
+  // Meta Quest 3 VR 6DoF Controller Physics Component
+  AFRAME.registerComponent('stick-swing', {
+    init: function () {
+      this.centerWorldPos = new THREE.Vector3();
+      this.tipWorldPos = new THREE.Vector3();
+      this.potWorldPos = new THREE.Vector3();
+      this.lastVRHitTime = 0;
+
+      const el = this.el;
+      const onVrAction = () => {
+        if (window.MAYALI && window.MAYALI.timerActive && !window.MAYALI.resolved) {
+          performStrike();
+        }
+      };
+
+      el.addEventListener('triggerdown', onVrAction);
+      el.addEventListener('gripdown', onVrAction);
+      el.addEventListener('selectstart', onVrAction);
+      el.addEventListener('abuttondown', onVrAction);
+      el.addEventListener('bbuttondown', onVrAction);
+      el.addEventListener('xbuttondown', onVrAction);
+      el.addEventListener('ybuttondown', onVrAction);
+    },
+    tick: function (time, delta) {
+      const state = window.MAYALI;
+      if (state.resolved || !state.timerActive) return;
+
+      const potEntity = document.querySelector('#pot');
+      if (!potEntity || !potEntity.object3D) return;
+
+      potEntity.object3D.getWorldPosition(this.potWorldPos);
+
+      const isAlignedAtMiddle = Math.abs(this.potWorldPos.x) <= state.preset.centerThreshold;
+      if (!isAlignedAtMiddle) return;
+
+      const stick = this.el.querySelector('.stick') || this.el;
+      if (!stick || !stick.object3D) return;
+
+      stick.object3D.getWorldPosition(this.centerWorldPos);
+      const dir = new THREE.Vector3(0, 0, -0.6).applyQuaternion(stick.object3D.quaternion);
+      this.tipWorldPos.copy(this.centerWorldPos).add(dir);
+
+      const distCenter = this.centerWorldPos.distanceTo(this.potWorldPos);
+      const distTip = this.tipWorldPos.distanceTo(this.potWorldPos);
+      const minDist = Math.min(distCenter, distTip);
+
+      if (minDist < 2.8 && (time - this.lastVRHitTime > 220)) {
+        const raycaster = this.el.components.raycaster;
+        const intersectedEls = raycaster ? raycaster.intersectedEls : [];
+        const isPointingPot = intersectedEls.some(e => e.id === 'pot' || (e.closest && e.closest('#pot')));
+
+        if (isPointingPot || minDist < 2.3) {
+          this.lastVRHitTime = time;
+          triggerControllerHaptics();
+          registerPotHit();
+        }
+      }
+    }
+  });
+
+  // Multi-Hit Handler with Reset Shake Animation
+  function registerPotHit() {
+    const state = window.MAYALI;
+    if (state.resolved) return;
+
+    const now = Date.now();
+    if (now - lastHitTimeDebounce < 220) return;
+    lastHitTimeDebounce = now;
+    lastHitTimestamp = now;
+
+    state.hitsCurrent += 1;
+    const potEntity = document.querySelector('#pot');
+    const remaining = state.hitsRequired - state.hitsCurrent;
+
+    // Flash hit impact visual ring
+    const impactRing = document.querySelector('#impactRing');
+    if (impactRing && potEntity) {
+      const potPos = new THREE.Vector3();
+      potEntity.object3D.getWorldPosition(potPos);
+      impactRing.setAttribute('position', `${potPos.x} ${potPos.y} ${potPos.z}`);
+      impactRing.setAttribute('visible', true);
+      impactRing.setAttribute('scale', '0.2 0.2 0.2');
+      impactRing.setAttribute('animation__expand', {
+        property: 'scale',
+        from: '0.2 0.2 0.2',
+        to: '1.8 1.8 1.8',
+        dur: 200,
+        easing: 'easeOutQuad'
+      });
+      setTimeout(() => impactRing.setAttribute('visible', false), 220);
+    }
+
+    if (state.hitsCurrent < state.hitsRequired) {
+      SoundFX.playImpactCrack();
+      
+      const potSphere = potEntity ? potEntity.querySelector('a-sphere') : null;
+      if (potSphere) {
+        if (state.hitsCurrent === 1) potSphere.setAttribute('color', '#A04226');
+        if (state.hitsCurrent === 2) potSphere.setAttribute('color', '#7E2E17');
+      }
+
+      if (potEntity) {
+        potEntity.removeAttribute('animation__hitshake');
+        potEntity.setAttribute('animation__hitshake', {
+          property: 'rotation',
+          from: '0 0 0',
+          to: '22 16 -22',
+          dur: 70,
+          dir: 'alternate',
+          loop: 2
+        });
+
+        setTimeout(() => {
+          if (potEntity && !state.resolved) {
+            potEntity.removeAttribute('animation__hitshake');
+            potEntity.setAttribute('rotation', '0 0 0');
+          }
+        }, 280);
+      }
+
+      window.showMessage(`💥 DIRECT HIT ${state.hitsCurrent}/${state.hitsRequired}! ${remaining} MORE TO BREAK!`, 1400);
+      document.getElementById('hitCounterLabel').textContent = `Hits: ${state.hitsCurrent}/${state.hitsRequired}`;
+    } else {
+      state.endChallenge(true);
+    }
+  }
+
+  window.registerPotHit = registerPotHit;
+</script>
+
+<style>
+  html, body {
+    margin: 0; padding: 0; width: 100%; height: 100%;
+    overflow: hidden; background: #18110c;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  }
+
+  #hud {
+    position: fixed; top: 0; left: 0; right: 0;
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 16px 24px; pointer-events: none; z-index: 10;
+    color: #F4E9CF; text-shadow: 0 2px 8px rgba(0,0,0,.8);
+  }
+  #hud .badge {
+    font-size: 14px; letter-spacing: .08em; text-transform: uppercase;
+    background: rgba(24, 17, 12, 0.75); padding: 8px 18px; border-radius: 20px;
+    border: 1px solid rgba(201, 162, 39, 0.5); backdrop-filter: blur(8px);
+  }
+  #hud .timer {
+    font-size: 30px; font-weight: 800; color: #E8871E;
+    background: rgba(24, 17, 12, 0.85); padding: 6px 20px; border-radius: 30px;
+    border: 2px solid #E8871E; box-shadow: 0 0 20px rgba(232, 135, 30, 0.5);
+  }
+  #hud .hit-counter {
+    font-size: 18px; font-weight: 800; color: #F4E9CF;
+    background: rgba(181, 80, 47, 0.85); padding: 6px 18px; border-radius: 20px;
+    border: 1px solid #C9A227;
+  }
+  #hud .hud-buttons {
+    display: flex; gap: 10px; pointer-events: auto;
+  }
+  .hud-btn {
+    padding: 8px 18px; font-size: 14px; font-weight: 700; border-radius: 20px;
+    border: 1px solid #C9A227; background: rgba(181, 80, 47, 0.85);
+    color: #F4E9CF; cursor: pointer; transition: all 0.2s ease;
+    backdrop-filter: blur(8px);
+  }
+  .hud-btn:hover {
+    background: #E8871E; color: #18110c; transform: scale(1.05);
+  }
+  .hud-btn.exit-vr {
+    background: rgba(220, 53, 69, 0.85); border-color: #ff6b6b;
+  }
+
+  #startOverlay {
+    position: fixed; inset: 0; z-index: 20; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; text-align: center; gap: 20px;
+    background: radial-gradient(circle at 50% 35%, #442a1c 0%, #120c09 80%);
+    color: #F4E9CF; padding: 24px;
+  }
+  #startOverlay h1 {
+    font-size: 3.8rem; color: #C9A227; margin: 0; letter-spacing: .04em;
+    text-shadow: 0 4px 15px rgba(0,0,0,0.6);
+  }
+  #startOverlay .subtitle {
+    font-size: 1.15rem; color: #E8871E; text-transform: uppercase; letter-spacing: 0.15em; font-weight: 700;
+  }
+  #startOverlay p {
+    max-width: 520px; line-height: 1.6; opacity: .95; margin: 0; font-size: 1.05rem;
+  }
+  #startOverlay button {
+    padding: 16px 46px; font-size: 1.25rem; border-radius: 999px; border: 2px solid #C9A227;
+    background: linear-gradient(135deg, #E8871E, #B5502F); color: #FFF; font-weight: 800;
+    cursor: pointer; letter-spacing: .04em; transition: all 0.25s ease;
+    box-shadow: 0 6px 24px rgba(232, 135, 30, 0.45);
+  }
+  #startOverlay button:hover {
+    transform: translateY(-3px) scale(1.04);
+    background: linear-gradient(135deg, #C9A227, #E8871E);
+    box-shadow: 0 8px 30px rgba(201, 162, 39, 0.65);
+  }
+  .instructions-card {
+    background: rgba(0,0,0,0.45); padding: 14px 22px; border-radius: 14px;
+    font-size: 0.95rem; border: 1px solid rgba(201, 162, 39, 0.35); text-align: left;
+    max-width: 480px; line-height: 1.5;
+  }
+  .instructions-card ul { margin: 6px 0 0 0; padding-left: 20px; }
+  .key-badge {
+    background: rgba(201, 162, 39, 0.25); border: 1px solid #C9A227;
+    padding: 2px 8px; border-radius: 6px; font-weight: 700; color: #FFF;
+  }
+
+  /* Celebratory Victory Header - Completely Transparent Background */
+  #winModal {
+    position: fixed; inset: 0; z-index: 100; display: none; flex-direction: column;
+    align-items: center; justify-content: space-between; padding: 24px 20px 36px 20px;
+    background: transparent; pointer-events: none;
+    animation: fadeInModal 0.6s ease-out forwards;
+  }
+  @keyframes fadeInModal {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  #winModal .win-banner {
+    pointer-events: auto; background: rgba(24, 17, 12, 0.78); padding: 16px 42px;
+    border-radius: 30px; border: 2px solid #FFD700; backdrop-filter: blur(4px);
+    box-shadow: 0 0 30px rgba(255, 215, 0, 0.6); text-align: center;
+  }
+  #winModal h2 {
+    font-size: 3.4rem; color: #FFD700; margin: 0; letter-spacing: 0.08em;
+    text-shadow: 0 0 25px rgba(255, 215, 0, 0.9), 0 3px 10px rgba(0,0,0,0.9);
+  }
+  #winModal p {
+    font-size: 1.85rem; color: #FFF; margin: 6px 0 0 0; font-weight: 800;
+    text-shadow: 0 0 15px rgba(255, 215, 0, 0.8), 0 2px 8px rgba(0,0,0,0.9);
+  }
+  #winModal button {
+    pointer-events: auto; padding: 14px 42px; font-size: 1.2rem; font-weight: 800;
+    border-radius: 999px; border: 2px solid #FFD700; background: linear-gradient(135deg, #E8871E, #B5502F);
+    color: #FFF; cursor: pointer; box-shadow: 0 6px 24px rgba(232, 135, 30, 0.6);
+    transition: all 0.25s ease;
+  }
+  #winModal button:hover {
+    transform: scale(1.06); background: linear-gradient(135deg, #FFD700, #E8871E);
+  }
+</style>
+</head>
+<body>
+
+<!-- Victory Audio Element for Asset Reveal Music -->
+<audio id="victoryMusic" preload="auto">
+  <source src="victory_music.mpeg" type="audio/mpeg" />
+  <source src="victory_music.mp3" type="audio/mp3" />
+</audio>
+
+<div id="startOverlay">
+  <div class="subtitle">Experience the Real Uri Adi through VR</div>
+  <h1>അടി പൂക്കുറ്റി</h1>
+  <p>Step directly into the festival arena! Time your strike to hit the swinging pot <strong>when it reaches the middle</strong> to smash it in 3 hits!</p>
+
+  <div class="instructions-card">
+    🏏 <strong>Precision Timing Controls:</strong>
+    <ul>
+      <li><strong>Keyboard:</strong> Press <span class="key-badge">Spacebar</span>, <span class="key-badge">Enter</span>, <span class="key-badge">X</span>, or <span class="key-badge">F</span> when the pot is in the center!</li>
+      <li><strong>Mouse/Touch:</strong> Click or tap when the swinging pot aligns at the middle.</li>
+      <li><strong>Meta Quest 3 VR:</strong> Swing controller or press Trigger/Grip when pot reaches center.</li>
+    </ul>
+  </div>
+
+  <button id="beginBtn">Enter Festival Arena</button>
+  <small id="configLine">difficulty: medium · 3 timed hits to smash</small>
+</div>
+
+<div id="hud" style="display:none;">
+  <div class="badge" id="playerBadge">Player</div>
+  <div class="hit-counter" id="hitCounterLabel">Hits: 0/3</div>
+  <div class="timer" id="timerLabel">30</div>
+  <div class="hud-buttons">
+    <button class="hud-btn" id="restartBtn">🔄 Play Again</button>
+    <button class="hud-btn exit-vr" id="exitVrBtn">🚪 Exit VR</button>
+  </div>
+</div>
+
+<div id="winModal">
+  <div class="win-banner">
+    <h2>🏆 YOU WON! 🏆</h2>
+    <p>അടി പൂക്കുറ്റി!! 🌸</p>
+  </div>
+  <button id="playAgainWinBtn">🔄 Play Again</button>
+</div>
+
+<a-scene background="color: #160e08" vr-mode-ui="enabled: true">
+  <a-assets>
+    <img id="sunAssetImg" src="sun_asset.png" />
+  </a-assets>
+
+  <!-- VR Festival Sky & Atmosphere -->
+  <a-sky color="#25152B"></a-sky>
+  <a-entity geometry="primitive: sphere; radius: 65; segmentsHeight: 16"
+            material="color: #542B23; opacity: 0.5; side: back; shader: flat"
+            position="0 -20 0"></a-entity>
+
+  <!-- Ambient VR Lighting & Dynamic Warm Torch Lights -->
+  <a-light type="ambient" color="#FFF5E6" intensity="0.75"></a-light>
+  <a-light type="directional" color="#FFD700" intensity="0.8" position="2 4 3"></a-light>
+  <a-light id="leftTorch" type="point" color="#FF7F00" intensity="1.2" distance="6" position="-1.25 3.2 -2.0"
+           animation__flicker="property: light.intensity; from: 1.0; to: 1.5; dir: alternate; loop: true; dur: 450; easing: easeInOutSine"></a-light>
+  <a-light id="rightTorch" type="point" color="#FF7F00" intensity="1.2" distance="6" position="1.25 3.2 -2.0"
+           animation__flicker="property: light.intensity; from: 1.0; to: 1.5; dir: alternate; loop: true; dur: 520; easing: easeInOutSine"></a-light>
+
+  <a-plane rotation="-90 0 0" width="35" height="35" color="#2F5233" roughness="0.85"></a-plane>
+
+  <!-- Enhanced 3D Pookalam Floral Carpet -->
+  <a-entity id="pookalam" position="0 0.01 -2.2" rotation="-90 0 0">
+    <a-ring radius-inner="0.05" radius-outer="0.38" color="#C9A227"></a-ring>
+    <a-ring radius-inner="0.42" radius-outer="0.75" color="#E8871E"></a-ring>
+    <a-ring radius-inner="0.80" radius-outer="1.15" color="#B5502F"></a-ring>
+    <a-ring radius-inner="1.20" radius-outer="1.45" color="#F4E9CF"></a-ring>
+
+    <!-- Detailed 3D Petal Flourishes on Carpet Base -->
+    <a-entity position="0 0 0.005">
+      <a-circle radius="0.18" color="#FFD700" position="0 0.5 0"></a-circle>
+      <a-circle radius="0.18" color="#FFD700" position="0 -0.5 0"></a-circle>
+      <a-circle radius="0.18" color="#FFD700" position="0.5 0 0"></a-circle>
+      <a-circle radius="0.18" color="#FFD700" position="-0.5 0 0"></a-circle>
+    </a-entity>
+  </a-entity>
+
+  <!-- 3D Festive Diya Oil Lamps at Base of Pillars -->
+  <a-entity id="diyaLeft" position="-1.25 0.08 -2.0">
+    <a-cylinder radius="0.12" height="0.08" color="#C9A227"></a-cylinder>
+    <a-cone position="0 0.07 0" radius-bottom="0.04" height="0.1" color="#FF4500" material="emissive: #FF4500; emissiveIntensity: 0.8"></a-cone>
+  </a-entity>
+  <a-entity id="diyaRight" position="1.25 0.08 -2.0">
+    <a-cylinder radius="0.12" height="0.08" color="#C9A227"></a-cylinder>
+    <a-cone position="0 0.07 0" radius-bottom="0.04" height="0.1" color="#FF4500" material="emissive: #FF4500; emissiveIntensity: 0.8"></a-cone>
+  </a-entity>
+
+  <!-- Pillar Frame & Lanterns -->
+  <a-sphere position="-1.2 3.55 -2.2" radius="0.13" color="#E8871E" material="emissive: #E8871E; emissiveIntensity: 0.7"></a-sphere>
+  <a-sphere position="1.2 3.55 -2.2" radius="0.13" color="#E8871E" material="emissive: #E8871E; emissiveIntensity: 0.7"></a-sphere>
+
+  <a-box class="frame" position="-1.25 1.8 -2.2" width="0.15" height="3.6" depth="0.15" color="#422916"></a-box>
+  <a-box class="frame" position="1.25 1.8 -2.2" width="0.15" height="3.6" depth="0.15" color="#422916"></a-box>
+  <a-box class="frame" position="0 3.6 -2.2" width="2.65" height="0.15" depth="0.15" color="#422916"></a-box>
+
+  <!-- Dynamic Marigold Garland Strings hanging from frame -->
+  <a-entity id="garland" position="0 3.4 -2.15">
+    <a-sphere position="-1.0 0 0" radius="0.05" color="#FF7F00"></a-sphere>
+    <a-sphere position="-0.75 -0.1 0" radius="0.05" color="#FFD700"></a-sphere>
+    <a-sphere position="-0.5 -0.16 0" radius="0.05" color="#FF4500"></a-sphere>
+    <a-sphere position="-0.25 -0.2 0" radius="0.05" color="#FF7F00"></a-sphere>
+    <a-sphere position="0 -0.22 0" radius="0.05" color="#FFD700"></a-sphere>
+    <a-sphere position="0.25 -0.2 0" radius="0.05" color="#FF7F00"></a-sphere>
+    <a-sphere position="0.5 -0.16 0" radius="0.05" color="#FF4500"></a-sphere>
+    <a-sphere position="0.75 -0.1 0" radius="0.05" color="#FFD700"></a-sphere>
+    <a-sphere position="1.0 0 0" radius="0.05" color="#FF7F00"></a-sphere>
+  </a-entity>
+
+  <!-- Eye-Level 3D Automatic Swinging Outer Pivot -->
+  <a-entity id="potPivot" position="0 3.2 -2.2"
+            animation__swing="property: rotation; from: 0 0 -34; to: 0 0 34; dir: alternate; loop: true; dur: 2200; easing: easeInOutSine">
+    
+    <!-- Vertical Rope Height Tug Pivot -->
+    <a-entity id="potTug" position="0 0 0"
+              animation__tug="property: position; from: 0 0 0; to: 0 0.35 0; dir: alternate; loop: true; dur: 1500; easing: easeInOutQuad">
+      
+      <!-- Dynamic Rope -->
+      <a-cylinder id="rope" position="0 -0.55 0" radius="0.013" height="1.1" color="#6e4f32"></a-cylinder>
+      
+      <!-- Terracotta Clay Curd Pot -->
+      <a-entity id="pot" class="clickable" position="0 -1.45 0">
+        <a-sphere radius="0.34" color="#B5502F" roughness="0.9"></a-sphere>
+        <a-cylinder position="0 0.28 0" radius="0.13" height="0.15" color="#8f3f22"></a-cylinder>
+        <a-torus position="0 0.23 0" radius="0.21" radius-tubular="0.022" color="#C9A227"></a-torus>
+        <a-torus position="0 -0.05 0" radius="0.345" radius-tubular="0.015" color="#E8871E"></a-torus>
+      </a-entity>
+    </a-entity>
+  </a-entity>
+
+  <!-- Terracotta Clay Shards entity that scatter on floor -->
+  <a-entity id="shards" visible="false" position="0 0.15 -2.2">
+    <a-cone position="-0.32 0.08 0.15" radius-bottom="0.22" height="0.28" color="#B5502F" rotation="65 15 45"></a-cone>
+    <a-cone position="0.38 0.05 -0.18" radius-bottom="0.19" height="0.24" color="#8f3f22" rotation="-40 80 -35"></a-cone>
+    <a-sphere position="-0.1 -0.05 -0.28" radius="0.14" color="#E8871E"></a-sphere>
+    <a-cone position="0.15 0.02 0.32" radius-bottom="0.16" height="0.20" color="#B5502F" rotation="70 -40 25"></a-cone>
+  </a-entity>
+
+  <!-- 3D Small Flowers Explosion Entity (Burst out of broken pot shards) -->
+  <a-entity id="smallFlowersExplosion" visible="false" position="0 0.15 -2.2">
+    <!-- Small Flower 1 (Marigold Orange) -->
+    <a-entity id="flower1" position="0 0 0">
+      <a-sphere radius="0.04" color="#FFD700"></a-sphere>
+      <a-sphere position="0.05 0 0" radius="0.03" color="#FF7F00"></a-sphere>
+      <a-sphere position="-0.05 0 0" radius="0.03" color="#FF7F00"></a-sphere>
+      <a-sphere position="0 0.05 0" radius="0.03" color="#FF7F00"></a-sphere>
+      <a-sphere position="0 -0.05 0" radius="0.03" color="#FF7F00"></a-sphere>
+    </a-entity>
+
+    <!-- Small Flower 2 (Hibiscus Deep Pink) -->
+    <a-entity id="flower2" position="0 0 0">
+      <a-sphere radius="0.04" color="#FFFFFF"></a-sphere>
+      <a-sphere position="0.05 0 0" radius="0.035" color="#FF1493"></a-sphere>
+      <a-sphere position="-0.05 0 0" radius="0.035" color="#FF1493"></a-sphere>
+      <a-sphere position="0 0.05 0" radius="0.035" color="#FF1493"></a-sphere>
+      <a-sphere position="0 -0.05 0" radius="0.035" color="#FF1493"></a-sphere>
+    </a-entity>
+
+    <!-- Small Flower 3 (Jasmine White) -->
+    <a-entity id="flower3" position="0 0 0">
+      <a-sphere radius="0.03" color="#FFD700"></a-sphere>
+      <a-sphere position="0.04 0 0" radius="0.028" color="#FFFFFF"></a-sphere>
+      <a-sphere position="-0.04 0 0" radius="0.028" color="#FFFFFF"></a-sphere>
+      <a-sphere position="0 0.04 0" radius="0.028" color="#FFFFFF"></a-sphere>
+      <a-sphere position="0 -0.04 0" radius="0.028" color="#FFFFFF"></a-sphere>
+    </a-entity>
+
+    <!-- Small Flower 4 (Yellow Blossom) -->
+    <a-entity id="flower4" position="0 0 0">
+      <a-sphere radius="0.04" color="#B5502F"></a-sphere>
+      <a-sphere position="0.05 0 0" radius="0.032" color="#FFD700"></a-sphere>
+      <a-sphere position="-0.05 0 0" radius="0.032" color="#FFD700"></a-sphere>
+      <a-sphere position="0 0.05 0" radius="0.032" color="#FFD700"></a-sphere>
+      <a-sphere position="0 -0.05 0" radius="0.032" color="#FFD700"></a-sphere>
+    </a-entity>
+
+    <!-- Small Flower 5 (Festive Red) -->
+    <a-entity id="flower5" position="0 0 0">
+      <a-sphere radius="0.04" color="#FFD700"></a-sphere>
+      <a-sphere position="0.05 0 0" radius="0.03" color="#FF4500"></a-sphere>
+      <a-sphere position="-0.05 0 0" radius="0.03" color="#FF4500"></a-sphere>
+      <a-sphere position="0 0.05 0" radius="0.03" color="#FF4500"></a-sphere>
+      <a-sphere position="0 -0.05 0" radius="0.03" color="#FF4500"></a-sphere>
+    </a-entity>
+  </a-entity>
+
+  <!-- 3D Glowing Aura Halo around Sun Asset -->
+  <a-ring id="sunAura" radius-inner="0.9" radius-outer="1.1" color="#FFD700" position="0 2.2 -2.15" visible="false"
+          material="emissive: #FFD700; emissiveIntensity: 0.9; transparent: true; opacity: 0.75"
+          animation__rotate="property: rotation; from: 0 0 0; to: 0 0 360; dur: 6000; loop: true; easing: linear"></a-ring>
+
+  <!-- Sun Asset PNG (Transparent) that POPS UP from broken shards -->
+  <a-image id="sunAsset" src="#sunAssetImg" position="0 0.1 -2.2" width="1.85" height="1.85" visible="false"
+           material="transparent: true; alphaTest: 0.02"></a-image>
+
+  <!-- 3D Flower Petals Burst Entity -->
+  <a-entity id="flowerPetals" visible="false" position="0 0.4 -2.2">
+    <a-sphere position="-0.35 0.4 0.1" radius="0.10" color="#FFD700"></a-sphere>
+    <a-sphere position="0.4 0.25 -0.1" radius="0.11" color="#FF4500"></a-sphere>
+    <a-sphere position="-0.25 -0.2 0.25" radius="0.12" color="#FF69B4"></a-sphere>
+    <a-sphere position="0.25 -0.3 -0.2" radius="0.09" color="#C9A227"></a-sphere>
+    <a-sphere position="0 0.6 -0.15" radius="0.11" color="#FFFFFF"></a-sphere>
+    <a-sphere position="-0.45 -0.1 -0.1" radius="0.10" color="#E8871E"></a-sphere>
+  </a-entity>
+
+  <!-- Dynamic Bat Impact Spark Ring -->
+  <a-ring id="impactRing" radius-inner="0.1" radius-outer="0.4" color="#FFD700" visible="false"
+          material="emissive: #FFD700; emissiveIntensity: 1; transparent: true; opacity: 0.9" rotation="0 0 0"></a-ring>
+
+  <a-text id="worldMessage" value="🎯 Time your strike when pot reaches MIDDLE!" align="center" color="#F4E9CF" width="5.5"
+          position="0 2.7 -1.9" visible="true"></a-text>
+
+  <a-entity id="rig" position="0 0 1.2">
+    <a-camera id="mainCamera" position="0 1.6 0" look-controls wasd-controls="enabled: false">
+      <a-cursor id="mainCursor" color="#E8871E" raycaster="objects: .clickable" fuse="false"></a-cursor>
+    </a-camera>
+
+    <!-- Player Controllers with Full VR Gesture, Button, and Physical Swing Mapping -->
+    <a-entity id="rightHand"
+              oculus-touch-controls="hand: right"
+              laser-controls="hand: right"
+              raycaster="objects: .clickable; far: 10"
+              stick-swing
+              position="0.2 1.3 -0.4">
+      <a-cylinder class="stick" visible="true" radius="0.025" height="0.9" color="#C9A227"
+                  rotation="65 0 0" position="0 0.1 -0.4"
+                  material="roughness: 0.4; metalness: 0.2"></a-cylinder>
+    </a-entity>
+
+    <a-entity id="leftHand"
+              oculus-touch-controls="hand: left"
+              laser-controls="hand: left"
+              raycaster="objects: .clickable; far: 10"
+              stick-swing></a-entity>
+  </a-entity>
+
+</a-scene>
+
+<script>
+(function () {
+  const params = new URLSearchParams(window.location.search);
+  const difficulty = params.get('difficulty') || 'medium';
+  const player = params.get('player') || 'red';
+  const explicitTimeLimit = params.get('timeLimit');
+
+  const DIFFICULTY_PRESETS = {
+    easy:   { timeLimit: 35, swingSpeed: 1.6, swingAmplitude: 24, centerThreshold: 0.48 },
+    medium: { timeLimit: 30, swingSpeed: 2.2, swingAmplitude: 34, centerThreshold: 0.38 },
+    hard:   { timeLimit: 18, swingSpeed: 3.2, swingAmplitude: 45, centerThreshold: 0.25 }
+  };
+  const preset = DIFFICULTY_PRESETS[difficulty] || DIFFICULTY_PRESETS.medium;
+  if (explicitTimeLimit) preset.timeLimit = parseFloat(explicitTimeLimit);
+
+  window.MAYALI.preset = preset;
+
+  document.getElementById('configLine').textContent = `player: ${player} · difficulty: ${difficulty} · 3 timed hits to smash`;
+  document.getElementById('playerBadge').textContent = player.toUpperCase();
+
+  let score = 0;
+  let timeLeft = preset.timeLimit;
+  let timerHandle = null;
+  let creakInterval = null;
+
+  const timerLabel = document.getElementById('timerLabel');
+  const worldMessage = document.querySelector('#worldMessage');
+  const potPivot = document.querySelector('#potPivot');
+  const potTug = document.querySelector('#potTug');
+  const potEntity = document.querySelector('#pot');
+  const shards = document.querySelector('#shards');
+  const sunAsset = document.querySelector('#sunAsset');
+  const sunAura = document.querySelector('#sunAura');
+  const flowerPetals = document.querySelector('#flowerPetals');
+  const smallFlowersExplosion = document.querySelector('#smallFlowersExplosion');
+
+  creakInterval = setInterval(() => {
+    if (!window.MAYALI.resolved) {
+      SoundFX.playRopeCreak();
+      if (Math.random() > 0.45) SoundFX.playChendaBeat();
+    }
+  }, 2200);
+
+  function showMessage(text, ms) {
+    worldMessage.setAttribute('value', text);
+    worldMessage.setAttribute('visible', true);
+    if (ms) setTimeout(() => worldMessage.setAttribute('visible', false), ms);
+  }
+  window.showMessage = showMessage;
+
+  function tickTimer() {
+    if (!window.MAYALI.timerActive || window.MAYALI.resolved) return;
+    timeLeft -= 1;
+    timerLabel.textContent = Math.max(timeLeft, 0);
+    if (timeLeft <= 0) endChallenge(false);
+  }
+
+  function enterFestivalArena() {
+    SoundFX.init();
+    document.getElementById('startOverlay').style.display = 'none';
+    document.getElementById('hud').style.display = 'flex';
+    timerLabel.textContent = timeLeft;
+    window.MAYALI.timerActive = true;
+    timerHandle = setInterval(tickTimer, 1000);
+    showMessage('🎯 Time your strike when pot reaches MIDDLE!', 2600);
+  }
+
+  function stopSwingAnimations() {
+    potPivot.removeAttribute('animation__swing');
+    potTug.removeAttribute('animation__tug');
+    if (creakInterval) clearInterval(creakInterval);
+  }
+
+  function endChallenge(success) {
+    if (window.MAYALI.resolved) return;
+    window.MAYALI.resolved = true;
+    window.MAYALI.timerActive = false;
+    clearInterval(timerHandle);
+    stopSwingAnimations();
+
+    if (success) {
+      // 1. Pot drops to floor & shatters into pieces on impact
+      if (potEntity) {
+        potEntity.setAttribute('animation__drop', {
+          property: 'position',
+          to: '0 -2.6 0',
+          dur: 450,
+          easing: 'easeInQuad'
+        });
+      }
+
+      // 2. Pot shatters on floor, pieces scatter outward
+      setTimeout(() => {
+        SoundFX.playSmash();
+
+        if (potEntity) potEntity.setAttribute('visible', false);
+        if (shards) {
+          shards.setAttribute('visible', true);
+          shards.setAttribute('position', '0 0.15 -2.2');
+          
+          shards.setAttribute('animation__scatter', {
+            property: 'scale',
+            from: '0.3 0.3 0.3',
+            to: '2.2 0.3 2.2',
+            dur: 500,
+            easing: 'easeOutExpo'
+          });
+        }
+
+        // 3. Small Flowers Explode outward from broken pot shards!
+        if (smallFlowersExplosion) {
+          smallFlowersExplosion.setAttribute('visible', true);
+          
+          const flowerIds = ['#flower1', '#flower2', '#flower3', '#flower4', '#flower5'];
+          const targets = [
+            { pos: '-0.75 0.6 0.4', rot: '120 45 90' },
+            { pos: '0.8 0.8 -0.3', rot: '-90 80 40' },
+            { pos: '-0.4 1.1 -0.5', rot: '45 -60 120' },
+            { pos: '0.6 0.5 0.5', rot: '180 30 -45' },
+            { pos: '0 1.3 0.2', rot: '90 0 180' }
+          ];
+
+          flowerIds.forEach((id, idx) => {
+            const fl = smallFlowersExplosion.querySelector(id);
+            if (fl) {
+              fl.setAttribute('animation__burst', {
+                property: 'position',
+                from: '0 0 0',
+                to: targets[idx].pos,
+                dur: 1600,
+                easing: 'easeOutExpo'
+              });
+              fl.setAttribute('animation__spin', {
+                property: 'rotation',
+                from: '0 0 0',
+                to: targets[idx].rot,
+                dur: 2000,
+                easing: 'easeOutQuad'
+              });
+            }
+          });
+        }
+
+        // 4. AFTER pot breaks & small flowers explode, Sun Asset POPS UP from broken shards!
+        setTimeout(() => {
+          // Play background victory music track when asset pops up!
+          const victoryMusic = document.getElementById('victoryMusic');
+          if (victoryMusic) {
+            victoryMusic.currentTime = 0;
+            const playPromise = victoryMusic.play();
+            if (playPromise !== undefined) {
+              playPromise.catch(e => console.log('Victory music play deferred:', e));
+            }
+          }
+
+          if (sunAsset) {
+            sunAsset.setAttribute('visible', true);
+            sunAsset.setAttribute('position', '0 0.1 -2.2');
+            sunAsset.setAttribute('scale', '0.1 0.1 0.1');
+
+            sunAsset.setAttribute('animation__popup', {
+              property: 'scale',
+              from: '0.1 0.1 0.1',
+              to: '1.4 1.4 1.4',
+              dur: 850,
+              easing: 'easeOutBack'
+            });
+
+            sunAsset.setAttribute('animation__rise', {
+              property: 'position',
+              from: '0 0.1 -2.2',
+              to: '0 2.2 -2.2',
+              dur: 1800,
+              easing: 'easeOutQuad'
+            });
+
+            sunAsset.setAttribute('animation__pulse', {
+              property: 'rotation',
+              from: '0 0 -8',
+              to: '0 0 8',
+              dur: 1400,
+              dir: 'alternate',
+              loop: true,
+              easing: 'easeInOutSine'
+            });
+          }
+
+          if (sunAura) {
+            setTimeout(() => sunAura.setAttribute('visible', true), 1200);
+          }
+
+          // 5. Flower petals burst out alongside asset pop up
+          if (flowerPetals) {
+            flowerPetals.setAttribute('visible', true);
+            flowerPetals.setAttribute('position', '0 0.4 -2.2');
+
+            flowerPetals.setAttribute('animation__flowerRise', {
+              property: 'position',
+              from: '0 0.4 -2.2',
+              to: '0 2.2 -2.2',
+              dur: 2000,
+              easing: 'easeOutQuad'
+            });
+
+            flowerPetals.setAttribute('animation__burst', {
+              property: 'scale',
+              from: '0.2 0.2 0.2',
+              to: '3.0 3.0 3.0',
+              dur: 2000,
+              easing: 'easeOutQuad'
+            });
+          }
+
+          // 6. Confetti, Fanfare & Win Overlay
+          triggerPartyPopper();
+          SoundFX.playVictoryFanfare();
+          document.getElementById('winModal').style.display = 'flex';
+          showMessage('🌸 YOU WON! അടി പൂക്കുറ്റി!! 🌸', 6000);
+          document.getElementById('hitCounterLabel').textContent = 'അടി പൂക്കുറ്റി!! 🏆';
+        }, 320);
+
+      }, 450);
+    } else {
+      showMessage("Time's up! The pot survived.", 3500);
+    }
+  }
+
+  window.MAYALI.endChallenge = endChallenge;
+
+  document.getElementById('beginBtn').addEventListener('click', enterFestivalArena);
+
+  document.getElementById('restartBtn').addEventListener('click', () => {
+    window.location.reload();
+  });
+
+  document.getElementById('playAgainWinBtn').addEventListener('click', () => {
+    window.location.reload();
+  });
+
+  const exitVrBtn = document.getElementById('exitVrBtn');
+  exitVrBtn.addEventListener('click', () => {
+    const scene = document.querySelector('a-scene');
+    if (scene && scene.is('vr-mode')) {
+      scene.exitVR();
+    } else {
+      document.getElementById('hud').style.display = 'none';
+      document.getElementById('startOverlay').style.display = 'flex';
+    }
+  });
+
+  // PRECISION TIMED STRIKE LOGIC
+  function performStrike() {
+    if (window.MAYALI.resolved || !window.MAYALI.timerActive) return;
+    SoundFX.playSwing();
+
+    const rightHand = document.querySelector('#rightHand');
+    if (rightHand) {
+      rightHand.removeAttribute('animation__strike');
+      rightHand.setAttribute('position', '0.2 1.3 -0.4');
+
+      setTimeout(() => {
+        if (rightHand && !window.MAYALI.resolved) {
+          rightHand.setAttribute('animation__strike', {
+            property: 'position',
+            from: '0.2 1.3 -0.4',
+            to: '0 1.65 -1.6',
+            dur: 110,
+            dir: 'alternate',
+            loop: 1,
+            easing: 'easeOutQuad'
+          });
+        }
+      }, 10);
+
+      setTimeout(() => {
+        if (rightHand && !window.MAYALI.resolved) {
+          rightHand.removeAttribute('animation__strike');
+          rightHand.setAttribute('position', '0.2 1.3 -0.4');
+        }
+      }, 250);
+    }
+
+    // Evaluate pot position precisely at the moment the bat hits forward (~110ms into swing)
+    setTimeout(() => {
+      if (window.MAYALI.resolved || !window.MAYALI.timerActive) return;
+
+      const potEntity = document.querySelector('#pot');
+      if (!potEntity || !potEntity.object3D) return;
+
+      const potWorldPos = new THREE.Vector3();
+      potEntity.object3D.getWorldPosition(potWorldPos);
+
+      // Pot alignment check: pot must be near middle (center X offset <= centerThreshold)
+      const isAlignedAtMiddle = Math.abs(potWorldPos.x) <= window.MAYALI.preset.centerThreshold;
+
+      if (isAlignedAtMiddle) {
+        triggerControllerHaptics();
+        window.registerPotHit();
+      } else {
+        if (Date.now() - lastHitTimestamp > 1000) {
+          showMessage('❌ MISSED! Time your strike when pot is in the MIDDLE!', 800);
+        }
+      }
+    }, 110);
+  }
+
+  document.querySelector('a-scene').addEventListener('click', performStrike);
+
+  window.addEventListener('keydown', (e) => {
+    if (!window.MAYALI.timerActive || window.MAYALI.resolved) return;
+
+    if (
+      e.code === 'Space' ||
+      e.code === 'Enter' ||
+      e.code === 'KeyX' ||
+      e.code === 'KeyF' ||
+      e.code === 'ArrowUp' ||
+      e.key === ' '
+    ) {
+      e.preventDefault();
+      performStrike();
+    }
+  });
+
+})();
+</script>
+</body>
+</html>
