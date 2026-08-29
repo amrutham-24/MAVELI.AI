@@ -73,16 +73,16 @@
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.type = 'sine';
-      osc.frequency.setValueAtTime(260, now);
-      osc.frequency.exponentialRampToValueAtTime(60, now + 0.12);
+      osc.frequency.setValueAtTime(320, now);
+      osc.frequency.exponentialRampToValueAtTime(55, now + 0.16);
 
-      gain.gain.setValueAtTime(0.35, now);
-      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
+      gain.gain.setValueAtTime(0.6, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.16);
 
       osc.connect(gain);
       gain.connect(ctx.destination);
       osc.start(now);
-      osc.stop(now + 0.12);
+      osc.stop(now + 0.16);
     },
 
     playSwing() {
@@ -112,19 +112,35 @@
       const ctx = this.audioCtx;
       const now = ctx.currentTime;
 
+      // Heavy Ceramic Impact Crack Transient
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.type = 'triangle';
-      osc.frequency.setValueAtTime(340, now);
-      osc.frequency.exponentialRampToValueAtTime(75, now + 0.16);
+      osc.frequency.setValueAtTime(520, now);
+      osc.frequency.exponentialRampToValueAtTime(90, now + 0.18);
 
-      gain.gain.setValueAtTime(0.75, now);
-      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.16);
+      gain.gain.setValueAtTime(0.95, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.18);
 
       osc.connect(gain);
       gain.connect(ctx.destination);
       osc.start(now);
-      osc.stop(now + 0.16);
+      osc.stop(now + 0.18);
+
+      // Festival Chenda Drum Punch
+      const drumOsc = ctx.createOscillator();
+      const drumGain = ctx.createGain();
+      drumOsc.type = 'sine';
+      drumOsc.frequency.setValueAtTime(280, now);
+      drumOsc.frequency.exponentialRampToValueAtTime(50, now + 0.20);
+
+      drumGain.gain.setValueAtTime(0.8, now);
+      drumGain.gain.exponentialRampToValueAtTime(0.01, now + 0.20);
+
+      drumOsc.connect(drumGain);
+      drumGain.connect(ctx.destination);
+      drumOsc.start(now);
+      drumOsc.stop(now + 0.20);
     },
 
     playSmash() {
@@ -373,7 +389,7 @@
     }
   });
 
-  // Multi-Hit Handler with Reset Shake Animation
+  // Multi-Hit Handler with Impact Sound, Quest Haptics & Shard Shatter Animation
   function registerPotHit() {
     const state = window.MAYALI;
     if (state.resolved) return;
@@ -387,6 +403,11 @@
     const potEntity = document.querySelector('#pot');
     const remaining = state.hitsRequired - state.hitsCurrent;
 
+    // Sound & Haptic Feedback on EVERY Hit
+    SoundFX.playImpactCrack();
+    SoundFX.playChendaBeat();
+    triggerControllerHaptics(1.0, 220);
+
     // Flash hit impact visual ring
     const impactRing = document.querySelector('#impactRing');
     if (impactRing && potEntity) {
@@ -398,7 +419,7 @@
       impactRing.setAttribute('animation__expand', {
         property: 'scale',
         from: '0.2 0.2 0.2',
-        to: '1.8 1.8 1.8',
+        to: '2.0 2.0 2.0',
         dur: 200,
         easing: 'easeOutQuad'
       });
@@ -406,8 +427,6 @@
     }
 
     if (state.hitsCurrent < state.hitsRequired) {
-      SoundFX.playImpactCrack();
-      
       const potSphere = potEntity ? potEntity.querySelector('a-sphere') : null;
       if (potSphere) {
         if (state.hitsCurrent === 1) potSphere.setAttribute('color', '#A04226');
@@ -419,7 +438,7 @@
         potEntity.setAttribute('animation__hitshake', {
           property: 'rotation',
           from: '0 0 0',
-          to: '22 16 -22',
+          to: '26 18 -26',
           dur: 70,
           dir: 'alternate',
           loop: 2
@@ -436,6 +455,8 @@
       window.showMessage(`💥 DIRECT HIT ${state.hitsCurrent}/${state.hitsRequired}! ${remaining} MORE TO BREAK!`, 1400);
       document.getElementById('hitCounterLabel').textContent = `Hits: ${state.hitsCurrent}/${state.hitsRequired}`;
     } else {
+      document.getElementById('hitCounterLabel').textContent = `Hits: ${state.hitsRequired}/${state.hitsRequired} - SMASHING!`;
+      window.showMessage(`💥 CRITICAL HIT ${state.hitsCurrent}/${state.hitsRequired}! POT BREAKING!`, 800);
       state.endChallenge(true);
     }
   }
@@ -884,17 +905,20 @@
     stopSwingAnimations();
 
     if (success) {
-      // 1. Pot drops to floor & shatters into pieces on impact
+      // 1. Rope snaps & pot falls down to floor on 3rd hit
+      const rope = document.querySelector('#rope');
+      if (rope) rope.setAttribute('visible', false);
+
       if (potEntity) {
         potEntity.setAttribute('animation__drop', {
           property: 'position',
           to: '0 -2.6 0',
-          dur: 450,
+          dur: 420,
           easing: 'easeInQuad'
         });
       }
 
-      // 2. Pot shatters on floor, pieces scatter outward
+      // 2. Pot shatters on floor impact, pieces scatter outward
       setTimeout(() => {
         SoundFX.playSmash();
 
