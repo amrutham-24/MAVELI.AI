@@ -290,28 +290,29 @@
     } catch (e) {}
   }
 
-  // Meta Quest 3 VR 6DoF Controller Physics Component
+  // Meta Quest 2 & Quest 3 6DoF Controller Physics & Collision Component
   AFRAME.registerComponent('stick-swing', {
     init: function () {
+      this.prevPos = new THREE.Vector3();
+      this.currPos = new THREE.Vector3();
       this.centerWorldPos = new THREE.Vector3();
       this.tipWorldPos = new THREE.Vector3();
       this.potWorldPos = new THREE.Vector3();
       this.lastVRHitTime = 0;
+      this.initializedPos = false;
 
       const el = this.el;
       const onVrAction = () => {
         if (window.MAYALI && window.MAYALI.timerActive && !window.MAYALI.resolved) {
-          performStrike();
+          performStrikeFromVR(el);
         }
       };
 
-      el.addEventListener('triggerdown', onVrAction);
-      el.addEventListener('gripdown', onVrAction);
-      el.addEventListener('selectstart', onVrAction);
-      el.addEventListener('abuttondown', onVrAction);
-      el.addEventListener('bbuttondown', onVrAction);
-      el.addEventListener('xbuttondown', onVrAction);
-      el.addEventListener('ybuttondown', onVrAction);
+      const events = [
+        'triggerdown', 'gripdown', 'squeezedown', 'selectstart', 'select',
+        'abuttondown', 'bbuttondown', 'xbuttondown', 'ybuttondown', 'thumbstickdown'
+      ];
+      events.forEach(evtName => el.addEventListener(evtName, onVrAction));
     },
     tick: function (time, delta) {
       const state = window.MAYALI;
@@ -320,28 +321,50 @@
       const potEntity = document.querySelector('#pot');
       if (!potEntity || !potEntity.object3D) return;
 
-      potEntity.object3D.getWorldPosition(this.potWorldPos);
-
-      const isAlignedAtMiddle = Math.abs(this.potWorldPos.x) <= state.preset.centerThreshold;
-      if (!isAlignedAtMiddle) return;
-
       const stick = this.el.querySelector('.stick') || this.el;
       if (!stick || !stick.object3D) return;
 
       stick.object3D.getWorldPosition(this.centerWorldPos);
-      const dir = new THREE.Vector3(0, 0, -0.6).applyQuaternion(stick.object3D.quaternion);
+      potEntity.object3D.getWorldPosition(this.potWorldPos);
+
+      // Tip position (extend 0.7m along stick Z axis)
+      const dir = new THREE.Vector3(0, 0, -0.7).applyQuaternion(stick.object3D.quaternion);
       this.tipWorldPos.copy(this.centerWorldPos).add(dir);
 
+      // Velocity calculation
+      if (!this.initializedPos) {
+        this.prevPos.copy(this.centerWorldPos);
+        this.initializedPos = true;
+        return;
+      }
+
+      this.currPos.copy(this.centerWorldPos);
+      const moveDist = this.currPos.distanceTo(this.prevPos);
+      const velocity = delta > 0 ? (moveDist / (delta / 1000)) : 0;
+      this.prevPos.copy(this.currPos);
+
+      // Distances
       const distCenter = this.centerWorldPos.distanceTo(this.potWorldPos);
       const distTip = this.tipWorldPos.distanceTo(this.potWorldPos);
       const minDist = Math.min(distCenter, distTip);
 
-      if (minDist < 2.8 && (time - this.lastVRHitTime > 220)) {
-        const raycaster = this.el.components.raycaster;
-        const intersectedEls = raycaster ? raycaster.intersectedEls : [];
-        const isPointingPot = intersectedEls.some(e => e.id === 'pot' || (e.closest && e.closest('#pot')));
+      // Raycaster check
+      const raycaster = this.el.components.raycaster;
+      let isIntersectingPot = false;
+      if (raycaster && raycaster.intersectedEls) {
+        isIntersectingPot = raycaster.intersectedEls.some(e => {
+          return e.id === 'pot' || e.classList.contains('clickable') || (e.closest && e.closest('#pot'));
+        });
+      }
 
-        if (isPointingPot || minDist < 2.3) {
+      // Quest 2 Physical Swing or Aim Hit Detection
+      if (time - this.lastVRHitTime > 220) {
+        const isSwingingHard = velocity > 1.2;
+        const isNearPot = minDist < 1.6;
+        const isDirectTouch = minDist < 0.95;
+        const isPotInCenterWindow = Math.abs(this.potWorldPos.x) <= (state.preset.centerThreshold + 0.35);
+
+        if (isDirectTouch || (isIntersectingPot && isPotInCenterWindow) || (isSwingingHard && isNearPot && isPotInCenterWindow)) {
           this.lastVRHitTime = time;
           triggerControllerHaptics();
           registerPotHit();
@@ -760,19 +783,21 @@
     <!-- Player Controllers with Full VR Gesture, Button, and Physical Swing Mapping -->
     <a-entity id="rightHand"
               oculus-touch-controls="hand: right"
+              meta-touch-controls="hand: right"
               laser-controls="hand: right"
-              raycaster="objects: .clickable; far: 10"
+              raycaster="objects: .clickable, a-sphere, a-cylinder, a-torus; far: 10"
               stick-swing
               position="0.2 1.3 -0.4">
-      <a-cylinder class="stick" visible="true" radius="0.025" height="0.9" color="#C9A227"
+      <a-cylinder class="stick" visible="true" radius="0.028" height="0.95" color="#C9A227"
                   rotation="65 0 0" position="0 0.1 -0.4"
-                  material="roughness: 0.4; metalness: 0.2"></a-cylinder>
+                  material="roughness: 0.3; metalness: 0.3"></a-cylinder>
     </a-entity>
 
     <a-entity id="leftHand"
               oculus-touch-controls="hand: left"
+              meta-touch-controls="hand: left"
               laser-controls="hand: left"
-              raycaster="objects: .clickable; far: 10"
+              raycaster="objects: .clickable, a-sphere, a-cylinder, a-torus; far: 10"
               stick-swing></a-entity>
   </a-entity>
 
@@ -1028,6 +1053,42 @@
     }
   });
 
+  // VR Strike action triggered by Quest 2 Controller button or physical motion
+  function performStrikeFromVR(controllerEl) {
+    if (window.MAYALI.resolved || !window.MAYALI.timerActive) return;
+    SoundFX.playSwing();
+
+    const potEntity = document.querySelector('#pot');
+    if (!potEntity || !potEntity.object3D) return;
+
+    const potWorldPos = new THREE.Vector3();
+    potEntity.object3D.getWorldPosition(potWorldPos);
+
+    // Check raycaster or controller distance
+    let isIntersecting = false;
+    if (controllerEl && controllerEl.components && controllerEl.components.raycaster) {
+      const intersectedEls = controllerEl.components.raycaster.intersectedEls || [];
+      isIntersecting = intersectedEls.some(e => e.id === 'pot' || e.classList.contains('clickable') || (e.closest && e.closest('#pot')));
+    }
+
+    const controllerPos = new THREE.Vector3();
+    if (controllerEl && controllerEl.object3D) controllerEl.object3D.getWorldPosition(controllerPos);
+    const distToPot = controllerPos.distanceTo(potWorldPos);
+
+    const isPotNearMiddle = Math.abs(potWorldPos.x) <= (window.MAYALI.preset.centerThreshold + 0.35);
+
+    if (isIntersecting || distToPot < 2.0 || isPotNearMiddle) {
+      triggerControllerHaptics();
+      window.registerPotHit();
+    } else {
+      if (Date.now() - lastHitTimestamp > 1000) {
+        showMessage('❌ MISSED! Swing when pot is in the MIDDLE!', 800);
+      }
+    }
+  }
+
+  window.performStrikeFromVR = performStrikeFromVR;
+
   // PRECISION TIMED STRIKE LOGIC
   function performStrike() {
     if (window.MAYALI.resolved || !window.MAYALI.timerActive) return;
@@ -1070,8 +1131,8 @@
       const potWorldPos = new THREE.Vector3();
       potEntity.object3D.getWorldPosition(potWorldPos);
 
-      // Pot alignment check: pot must be near middle (center X offset <= centerThreshold)
-      const isAlignedAtMiddle = Math.abs(potWorldPos.x) <= window.MAYALI.preset.centerThreshold;
+      // Pot alignment check: relaxed threshold for smooth VR / desktop experience
+      const isAlignedAtMiddle = Math.abs(potWorldPos.x) <= (window.MAYALI.preset.centerThreshold + 0.35);
 
       if (isAlignedAtMiddle) {
         triggerControllerHaptics();
