@@ -1,4 +1,4 @@
-# 🌾 MĀYĀLI — Uri Adi Challenge 🏺
+# 🌾 ADI POOKUTTI — Uri Adi Challenge 🏺
 
 An interactive 3D WebXR / VR game celebrating the traditional Onam **Uri Adi** pot-breaking festival challenge.
 
@@ -11,4 +11,4 @@ An interactive 3D WebXR / VR game celebrating the traditional Onam **Uri Adi** p
 
 ## Live Deployment
 - **GitHub Repository**: [Meghaa-sys/uri-adi](https://github.com/Meghaa-sys/uri-adi)
-- **Hosted on Vercel**: Instant static edge deployment.
+- **Hosted on Vercel**: https://uri-adi.vercel.app  Instant static edge deployment.
