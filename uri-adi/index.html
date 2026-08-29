@@ -726,10 +726,11 @@
     <a-sphere position="1.0 0 0" radius="0.05" color="#FF7F00"></a-sphere>
   </a-entity>
 
-  <!-- Eye-Level 3D Automatic Swinging Outer Pivot in Full 3D Space -->
+  <!-- Dynamic 3D Swinging Outer Pivot (Wide Left-Right Pendulum, Depth Swing, & Position Sway) -->
   <a-entity id="potPivot" position="0 3.2 -2.2"
-            animation__swingX="property: rotation; from: 0 0 -38; to: 0 0 38; dir: alternate; loop: true; dur: 2100; easing: easeInOutSine"
-            animation__swingZ="property: rotation; from: -15 0 0; to: 15 0 0; dir: alternate; loop: true; dur: 1650; easing: easeInOutSine">
+            animation__swingX="property: rotation; from: 0 0 -52; to: 0 0 52; dir: alternate; loop: true; dur: 2200; easing: easeInOutSine"
+            animation__swingZ="property: rotation; from: -24 0 0; to: 24 0 0; dir: alternate; loop: true; dur: 1700; easing: easeInOutSine"
+            animation__swayPos="property: position; from: -0.85 3.2 -2.2; to: 0.85 3.2 -2.2; dir: alternate; loop: true; dur: 2400; easing: easeInOutSine">
     
     <!-- Vertical Rope Height Tug Pivot -->
     <a-entity id="potTug" position="0 0 0"
