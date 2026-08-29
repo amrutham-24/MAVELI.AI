@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ORMA SADHYA — See it. Remember it. Serve it.</title>
+<script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+<style>
+  html, body { margin:0; padding:0; width:100%; height:100%; background:#0c1a10; overflow:hidden; font-family: 'Segoe UI', Arial, sans-serif; }
+  a-scene { width:100%; height:100%; }
+
+  /* Desktop-only debug / info overlay. Never shown inside the headset. */
+  #dbg {
+    position:fixed; top:8px; left:8px; z-index:20;
+    background:rgba(10,20,12,0.85); color:#d8f5d8; border:1px solid #3a6b3a;
+    border-radius:8px; padding:8px 10px; font-size:12px; line-height:1.5;
+    display:none; max-width:260px;
+  }
+  #dbg h3 { margin:0 0 6px 0; font-size:13px; color:#8be08b; }
+  #dbg button {
+    background:#204a24; color:#e9ffe9; border:1px solid #4a8a4a; border-radius:4px;
+    padding:3px 6px; margin:2px 2px 2px 0; font-size:11px; cursor:pointer;
+  }
+  #dbg button:hover { background:#2f662f; }
+  #hint {
+    position:fixed; bottom:10px; left:50%; transform:translateX(-50%);
+    color:#cfe8cf; background:rgba(10,20,12,0.6); padding:5px 12px; border-radius:6px;
+    font-size:12px; z-index:20;
+  }
+</style>
+</head>
+<body>
+
+<div id="dbg">
+  <h3>🍃 ORMA SADHYA — Debug (press D to toggle)</h3>
+  <div id="dbg-state">state: -</div>
+  <div id="dbg-stats">round:0 lvl:1 correct:0/0 mistakes:0</div>
+  <div style="margin-top:6px;">
+    <button data-dbg="skipMemorize">Skip Memorize</button>
+    <button data-dbg="completeRound">Force Complete</button>
+    <button data-dbg="resetRound">Reset Round</button><br/>
+    <button data-dbg="lvl1">Lvl 1</button>
+    <button data-dbg="lvl2">Lvl 2</button>
+    <button data-dbg="lvl3">Lvl 3</button>
+    <button data-dbg="lvl4">Lvl 4</button>
+    <button data-dbg="lvl5">Lvl 5</button><br/>
+    <button data-dbg="toggleTargets">Toggle Target Zones</button>
+  </div>
+</div>
+<div id="hint">Desktop test: click-drag food onto the leaf. Press D for debug panel. Best experienced in a Quest headset.</div>
+
+<a-scene background="color:#0c1a10" renderer="colorManagement:true; physicallyCorrectLights:true" webxr="optionalFeatures: hand-tracking, local-floor">
+
+  <a-assets timeout="15000">
+    <img id="tex-leaf" src="assets/leaf.png" crossorigin="anonymous">
+    <img id="tex-salt" src="assets/salt.png" crossorigin="anonymous">
+    <img id="tex-chip" src="assets/chips.png" crossorigin="anonymous">
+    <img id="tex-banana" src="assets/banana.png" crossorigin="anonymous">
+    <img id="tex-payasam" src="assets/payasam.png" crossorigin="anonymous">
+    <img id="tex-rice" src="assets/rice.png" crossorigin="anonymous">
+    <img id="tex-sharkara" src="assets/sharkara_varatti.png" crossorigin="anonymous">
+    <img id="tex-sambar" src="assets/sambar.png" crossorigin="anonymous">
+    <img id="tex-sadyamemoru" src="assets/sadyamemoru.png" crossorigin="anonymous">
+    <img id="tex-sadya" src="assets/sadya.png" crossorigin="anonymous">
+  </a-assets>
+
+  <!-- ============ ENVIRONMENT (lightweight Onam theme) ============ -->
+  <a-entity light="type:ambient; color:#fff3d6; intensity:0.75"></a-entity>
+  <a-entity light="type:directional; color:#fff8e6; intensity:0.55" position="1 3 1"></a-entity>
+
+  <a-sky color="#123319"></a-sky>
+  <a-circle rotation="-90 0 0" position="0 0 0" radius="8" color="#173b1f" material="shader:flat"></a-circle>
+
+  <!-- simple coconut-tree silhouettes for cheap Kerala atmosphere -->
+  <a-entity position="-3.2 0 -3.5">
+    <a-cylinder radius="0.08" height="3" color="#5a3d22" position="0 1.5 0"></a-cylinder>
+    <a-cone radius-bottom="0.7" radius-top="0" height="0.9" color="#1f5c2a" position="0 3.1 0" rotation="180 0 0"></a-cone>
+  </a-entity>
+  <a-entity position="3.4 0 -3.8">
+    <a-cylinder radius="0.08" height="2.6" color="#5a3d22" position="0 1.3 0"></a-cylinder>
+    <a-cone radius-bottom="0.6" radius-top="0" height="0.8" color="#1f5c2a" position="0 2.7 0" rotation="180 0 0"></a-cone>
+  </a-entity>
+
+  <!-- pookalam-style decorative ring on the floor, purely decorative -->
+  <a-ring rotation="-90 0 0" position="0 0.01 -1.4" radius-inner="0.9" radius-outer="1.05" color="#e08a1e" material="shader:flat; opacity:0.6"></a-ring>
+  <a-ring rotation="-90 0 0" position="0 0.011 -1.4" radius-inner="0.55" radius-outer="0.7" color="#c23b2c" material="shader:flat; opacity:0.6"></a-ring>
+
+  <!-- ============ SADYA TABLE + LEAF ============ -->
+  <a-entity id="table" position="0 0 -0.45">
+    <a-box width="1.7" height="1.0" depth="1.0" color="#3a2a1a" position="0 0.5 0"></a-box>
+    <a-entity id="leaf" position="0 1.001 0" rotation="-90 0 0">
+      <a-plane id="leaf-plane" src="#tex-leaf" transparent="true" width="1.3" height="0.62" material="shader:flat; alphaTest:0.05; side:double"></a-plane>
+
+      <!-- Target zones: transparent circles with numbers -->
+      <a-entity class="target-zone" data-item="chip" position="-0.40 0.15 0.005">
+        <a-circle radius="0.08" color="#ffffff" material="opacity:0.3; shader:flat; side:double; transparent:true"></a-circle>
+        <a-text value="1" align="center" color="#ffffff" width="1.2" position="0 0 0.002"></a-text>
+      </a-entity>
+      <a-entity class="target-zone" data-item="sharkara" position="-0.15 0.15 0.005">
+        <a-circle radius="0.08" color="#ffffff" material="opacity:0.3; shader:flat; side:double; transparent:true"></a-circle>
+        <a-text value="2" align="center" color="#ffffff" width="1.2" position="0 0 0.002"></a-text>
+      </a-entity>
+      <a-entity class="target-zone" data-item="banana" position="0.10 0.15 0.005">
+        <a-circle radius="0.08" color="#ffffff" material="opacity:0.3; shader:flat; side:double; transparent:true"></a-circle>
+        <a-text value="3" align="center" color="#ffffff" width="1.2" position="0 0 0.002"></a-text>
+      </a-entity>
+      <a-entity class="target-zone" data-item="rice" position="0.0 -0.10 0.005">
+        <a-circle radius="0.11" color="#ffffff" material="opacity:0.3; shader:flat; side:double; transparent:true"></a-circle>
+        <a-text value="4" align="center" color="#ffffff" width="1.2" position="0 -0.10 0.002"></a-text>
+      </a-entity>
+      <a-entity class="target-zone" data-item="sambar" position="0.01 -0.07 0.006">
+        <a-circle radius="0.08" color="#ffffff" material="opacity:0.3; shader:flat; side:double; transparent:true"></a-circle>
+        <a-text value="5" align="center" color="#ffffff" width="1.2" position="0 0.09 0.002"></a-text>
+      </a-entity>
+      <a-entity class="target-zone" data-item="payasam" position="0.45 0.10 0.005">
+        <a-circle radius="0.09" color="#ffffff" material="opacity:0.3; shader:flat; side:double; transparent:true"></a-circle>
+        <a-text value="6" align="center" color="#ffffff" width="1.2" position="0 0.10 0.002"></a-text>
+      </a-entity>
+    </a-entity>
+  </a-entity>
+
+  <!-- ============ WORLD-SPACE UI ============ -->
+  <a-entity id="ui-root" position="0 1.85 -0.95" rotation="-10 0 0">
+
+    <a-entity id="menu-panel" visible="true">
+      <a-plane width="1.0" height="0.5" color="#123018" opacity="0.88" position="0 0 -0.01"></a-plane>
+      <a-text value="ORMA SADHYA" align="center" color="#ffd873" width="1.8" position="0 0.16 0" font="kelsonsans"></a-text>
+      <a-text value="See it. Remember it. Serve it." align="center" color="#dff5df" width="1.4" position="0 0.06 0"></a-text>
+      <a-entity class="ui-button" data-action="start" position="0 -0.10 0">
+        <a-plane class="grabbable" width="0.32" height="0.11" color="#2e7d32" radius="0.02"></a-plane>
+        <a-text value="START" align="center" color="#ffffff" width="1.6" position="0 0 0.01"></a-text>
+      </a-entity>
+      <a-text value="Level 1" id="menu-level-label" align="center" color="#a8d5a8" width="1.2" position="0 -0.20 0"></a-text>
+    </a-entity>
+
+    <a-entity id="memorize-panel" visible="false">
+      <a-plane width="0.6" height="0.28" color="#123018" opacity="0.82" position="0 0 -0.01"></a-plane>
+      <a-text value="REMEMBER THE SADYA" align="center" color="#ffd873" width="1.6" position="0 0.08 0"></a-text>
+      <a-text id="countdown-text" value="5" align="center" color="#ffffff" width="2.6" position="0 -0.06 0"></a-text>
+    </a-entity>
+
+    <a-entity id="hud-panel" visible="false" position="0.55 0.15 0" rotation="0 -18 0">
+      <a-plane width="0.42" height="0.22" color="#123018" opacity="0.82" position="0 0 -0.01"></a-plane>
+      <a-text value="RECREATE THE SADYA" align="center" color="#ffd873" width="1.15" position="0 0.07 0"></a-text>
+      <a-text id="progress-text" value="0 / 7" align="center" color="#ffffff" width="1.8" position="0 -0.01 0"></a-text>
+      <a-text id="mistakes-text" value="" align="center" color="#e08a8a" width="1.0" position="0 -0.07 0"></a-text>
+    </a-entity>
+
+    <a-entity id="results-panel" visible="false">
+      <a-plane width="1.05" height="0.85" color="#123018" opacity="0.92" position="0 0 -0.01"></a-plane>
+      <a-text id="results-title" value="SADYA COMPLETE!" align="center" color="#ffd873" width="1.7" position="0 0.34 0"></a-text>
+      <a-text id="results-body" value="" align="center" color="#eaffea" width="1.5" line-height="46" position="0 0.02 0"></a-text>
+      <a-text id="results-judge" value="" align="center" color="#ffe0a3" width="1.35" wrap-count="34" position="0 -0.24 0"></a-text>
+      <a-entity class="ui-button" data-action="next" position="0 -0.36 0">
+        <a-plane class="grabbable" width="0.4" height="0.11" color="#2e7d32" radius="0.02"></a-plane>
+        <a-text value="NEXT SADYA" align="center" color="#ffffff" width="1.4" position="0 0 0.01"></a-text>
+      </a-entity>
+    </a-entity>
+  </a-entity>
+
+  <!-- floating feedback text spawns here at runtime -->
+  <a-entity id="fx-root"></a-entity>
+
+  <!-- ============ PLAYER RIG ============ -->
+  <a-entity id="rig" position="0 0 0.05" movement-controls="enabled:false">
+    <a-entity id="head" camera="near:0.01" look-controls="pointerLockEnabled:false" position="0 1.6 0" cursor="rayOrigin:mouse" raycaster="objects:.grabbable; far:20">
+    </a-entity>
+
+    <a-entity id="leftHand"
+      hand-tracking-controls="hand:left; modelStyle:mesh"
+      oculus-touch-controls="hand:left; model:true"
+      generic-tracked-controller-controls="hand:left"
+      grab-hand="hand:left"
+      position="-0.2 1.2 -0.2">
+    </a-entity>
+
+    <a-entity id="rightHand"
+      hand-tracking-controls="hand:right; modelStyle:mesh"
+      oculus-touch-controls="hand:right; model:true"
+      generic-tracked-controller-controls="hand:right"
+      grab-hand="hand:right"
+      position="0.2 1.2 -0.2">
+    </a-entity>
+  </a-entity>
+
+</a-scene>
+
+<script src="js/game.js"></script>
+</body>
+</html>

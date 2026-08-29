@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <title>Vallam Kali VR — Onam Snake Boat Race</title>
+    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <!-- ============ 2D OVERLAY (desktop menu / debug) ============ -->
+    <div id="overlay">
+        <div id="menu-card">
+            <h1>🛶 VALLAM KALI</h1>
+            <p class="sub">Kerala Snake Boat Race — VR Challenge</p>
+            <button id="btn-start">START RACE</button>
+            <p class="hint">
+                Press <b>ENTER VR</b> (bottom-right) for headset mode.<br>
+                VR: Use <b>Thumbstick</b> to steer. <b>Trigger</b> to start/restart.<br>
+                Desktop: <b>A / D</b> or <b>← / →</b> to steer. <b>R</b> to restart.
+            </p>
+        </div>
+    </div>
+
+    <div id="debug-panel" class="hidden">
+        <div id="debug-readout"></div>
+        <div id="debug-buttons">
+            <button data-dbg="start">Start</button>
+            <button data-dbg="reset">Reset</button>
+            <button data-dbg="spawn">Spawn</button>
+            <button data-dbg="speedup">Speed +2</button>
+            <button data-dbg="finish">Skip→Finish</button>
+            <button data-dbg="lanes">Lane Markers</button>
+            <button data-dbg="boxes">Hitboxes</button>
+        </div>
+    </div>
+    <div id="debug-toggle">DEBUG (`)</div>
+
+    <!-- ============ A-FRAME SCENE ============ -->
+    <a-scene id="scene" game-manager renderer="antialias: true; colorManagement: true; foveationLevel: 2"
+        vr-mode-ui="enterVRButton: #enterVR" background="color: #8fd3e8"
+        fog="type: linear; color: #bfe6f0; near: 55; far: 130">
+
+        <a-assets timeout="6000">
+            <!-- Audio is optional; game never blocks on it. Drop files in assets/audio/. -->
+            <audio id="snd-ambience" src="assets/audio/water-ambience.mp3" preload="auto" loop
+                crossorigin="anonymous"></audio>
+            <audio id="snd-beep" src="assets/audio/countdown-beep.mp3" preload="auto" crossorigin="anonymous"></audio>
+            <audio id="snd-go" src="assets/audio/race-start.mp3" preload="auto" crossorigin="anonymous"></audio>
+            <audio id="snd-splash" src="assets/audio/splash.mp3" preload="auto" crossorigin="anonymous"></audio>
+            <audio id="snd-finish" src="assets/audio/finish.mp3" preload="auto" crossorigin="anonymous"></audio>
+            <audio id="snd-chenda" src="assets/audio/chenda-loop.mp3" preload="auto" loop
+                crossorigin="anonymous"></audio>
+        </a-assets>
+
+        <!-- ---------- LIGHTING (cheap: 1 ambient + 1 directional, no shadows) ---------- -->
+        <a-entity light="type: ambient; color: #cfe9f2; intensity: 0.85"></a-entity>
+        <a-entity light="type: directional; color: #fff3d6; intensity: 0.75" position="-3 6 2"></a-entity>
+
+        <!-- ---------- STATIC WORLD ---------- -->
+        <a-entity id="world">
+            <!-- Water -->
+            <a-plane id="water" water-surface rotation="-90 0 0" position="0 0 -40" width="220" height="400"
+                material="color: #1f7a6d; opacity: 0.95; metalness: 0.15; roughness: 0.35"></a-plane>
+
+            <!-- Sky dome -->
+            <a-sky color="#8fd3e8" radius="400"></a-sky>
+
+            <!-- Distant scenery band -->
+            <a-plane position="0 8 -170" width="420" height="26"
+                material="color: #4e7f5c; opacity: 0.55; transparent: true; fog: false"></a-plane>
+
+            <!-- Banks (scrolling greenery + coconut palms are generated in game.js) -->
+            <a-entity id="bank-left" position="-16 0 0"></a-entity>
+            <a-entity id="bank-right" position=" 16 0 0"></a-entity>
+
+            <!-- Lane markers (debug) -->
+            <a-entity id="lane-markers" visible="false">
+                <a-box position="-3 0.05 -20" depth="60" width="0.12" height="0.02" color="#ffee88"
+                    opacity="0.5"></a-box>
+                <a-box position=" 0 0.05 -20" depth="60" width="0.12" height="0.02" color="#ffee88"
+                    opacity="0.5"></a-box>
+                <a-box position=" 3 0.05 -20" depth="60" width="0.12" height="0.02" color="#ffee88"
+                    opacity="0.5"></a-box>
+            </a-entity>
+
+            <!-- Obstacle + FX containers -->
+            <a-entity id="obstacle-root"></a-entity>
+            <a-entity id="fx-root"></a-entity>
+            <a-entity id="finish-root"></a-entity>
+        </a-entity>
+
+        <!-- ---------- PLAYER RIG: boat + camera move together ---------- -->
+        <a-entity id="rig" boat-controller position="0 0 0">
+
+            <!-- Visual boat (tilts; camera does NOT tilt) -->
+            <a-entity id="boat-visual" position="0 0 0">
+                <!-- Hull -->
+                <a-box position="0 0.28 0" width="1.5" height="0.55" depth="9"
+                    material="color: #4a2d16; roughness: 0.9"></a-box>
+                <a-box position="0 0.62 0" width="1.7" height="0.14" depth="8.6"
+                    material="color: #6b4423; roughness: 0.9"></a-box>
+                <!-- Gunwale rails -->
+                <a-box position="-0.82 0.72 0" width="0.1" height="0.28" depth="8.4" material="color: #2f1c0d"></a-box>
+                <a-box position=" 0.82 0.72 0" width="0.1" height="0.28" depth="8.4" material="color: #2f1c0d"></a-box>
+                <!-- Gold trim -->
+                <a-box position="-0.86 0.88 0" width="0.06" height="0.06" depth="8.2"
+                    material="color: #d4a017; metalness: 0.6"></a-box>
+                <a-box position=" 0.86 0.88 0" width="0.06" height="0.06" depth="8.2"
+                    material="color: #d4a017; metalness: 0.6"></a-box>
+                <!-- Front prow taper -->
+                <a-cone position="0 0.35 -4.9" radius-bottom="0.75" radius-top="0.05" height="2.4" rotation="-90 0 0"
+                    material="color: #4a2d16"></a-cone>
+                <!-- Chundan tail: the iconic raised stern -->
+                <a-cylinder position="0 1.6 4.6" radius="0.16" height="3.4" rotation="-32 0 0"
+                    material="color: #2f1c0d"></a-cylinder>
+                <a-cylinder position="0 3.0 5.9" radius="0.13" height="2.2" rotation="-14 0 0"
+                    material="color: #2f1c0d"></a-cylinder>
+                <a-sphere position="0 4.05 6.2" radius="0.3" material="color: #d4a017; metalness: 0.7"></a-sphere>
+                <!-- Ceremonial umbrella (muthukuda) -->
+                <a-cone position="0 2.3 -2.2" radius-bottom="0.9" radius-top="0.02" height="0.5"
+                    material="color: #c8102e; side: double"></a-cone>
+                <a-cylinder position="0 1.85 -2.2" radius="0.035" height="1.0" material="color: #d4a017"></a-cylinder>
+                <!-- Rower silhouettes ahead of player (adds scale + motion) -->
+                <a-entity id="rowers"></a-entity>
+                <!-- Bow wake -->
+                <a-cone id="wake" position="0 0.06 -4.6" radius-bottom="1.5" radius-top="0.2" height="3.2"
+                    rotation="90 0 0" material="color: #ffffff; opacity: 0.32; transparent: true"></a-cone>
+            </a-entity>
+
+            <!-- Seated camera: stable, no independent animation -->
+            <a-entity id="player-camera" camera="active: true" position="0 1.45 0.6"
+                look-controls="pointerLockEnabled: false; touchEnabled: true" wasd-controls="enabled: false">
+
+                <!-- World-space HUD, comfortably below eye line -->
+                <a-entity id="hud" position="0 -0.30 -1.5" hud-manager>
+                    <a-plane width="1.35" height="0.42"
+                        material="color: #06121a; opacity: 0.55; transparent: true; shader: flat"></a-plane>
+                    <a-text id="hud-title" value="🛶 VALLAM KALI" align="center" position="0 0.145 0.01" width="1.5"
+                        color="#ffd76a" shader="msdf"></a-text>
+                    <a-text id="hud-dist" value="DISTANCE  0 / 150 m" align="center" position="0 0.015 0.01"
+                        width="1.35" color="#ffffff"></a-text>
+                    <a-text id="hud-stats" value="HITS 0     SPEED 0.0" align="center" position="0 -0.115 0.01"
+                        width="1.2" color="#9fe8ff"></a-text>
+                </a-entity>
+
+                <!-- Big centre messages: countdown / hit flash / results -->
+                <a-entity id="center-msg" position="0 0.25 -2.6">
+                    <a-text id="countdown-text" value="" align="center" position="0 0 0" width="7" color="#ffe066"
+                        opacity="0"></a-text>
+                </a-entity>
+
+                <a-text id="hit-text" value="⚠️ OBSTACLE HIT!" align="center" position="0 0.75 -2.2" width="3.2"
+                    color="#ff5a5a" opacity="0"></a-text>
+
+                <!-- Result panel -->
+                <a-entity id="result-panel" position="0 0.15 -2.4" visible="false">
+                    <a-plane width="2.5" height="1.75"
+                        material="color: #06121a; opacity: 0.82; transparent: true; shader: flat"></a-plane>
+                    <a-text id="result-text" value="" align="center" position="0 0.18 0.01" width="2.6" color="#ffffff"
+                        baseline="center"></a-text>
+                    <a-entity id="btn-again" class="clickable" play-again-button position="0 -0.62 0.02">
+                        <a-plane width="1.15" height="0.26" material="color: #1f7a6d; shader: flat"></a-plane>
+                        <a-text value="▶  PLAY AGAIN" align="center" position="0 0 0.01" width="1.5"
+                            color="#ffffff"></a-text>
+                    </a-entity>
+                </a-entity>
+            </a-entity>
+
+            <!-- VR controllers: thumbstick steering + trigger to start/restart -->
+            <a-entity id="left-hand" vr-input="hand: left" laser-controls="hand: left"
+                raycaster="objects: .clickable; far: 6"></a-entity>
+            <a-entity id="right-hand" vr-input="hand: right" laser-controls="hand: right"
+                raycaster="objects: .clickable; far: 6"></a-entity>
+        </a-entity>
+
+        <!-- Cursor for desktop clicking of the Play Again button -->
+        <a-entity cursor="rayOrigin: mouse" raycaster="objects: .clickable"></a-entity>
+    </a-scene>
+
+    <script src="game.js"></script>
+</body>
+
+</html>
