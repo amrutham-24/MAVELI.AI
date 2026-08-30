@@ -42,8 +42,25 @@ const char* TRIVIA_QUESTIONS[] = {
 };
 #define NUM_TRIVIA_QUESTIONS 3
 
-// Replace with your actual hosted VR game URL.
-const char* VR_GAME_URL = "https://your-vr-game-url.example.com";
+// VR links, one per VR cell, in board order (cell 6, then cell 11, then cell 16).
+const char* VR_URLS[] = {
+  "https://uri-adi.vercel.app/",
+  "https://level-2-memory.vercel.app/",
+  "https://vallamkali.vercel.app/"
+};
+
+// Returns the VR link for a given board cell (1-indexed), or "" if that
+// cell isn't a VR cell. Counts VR cells in order and matches to VR_URLS.
+String vrUrlForCell(int cell) {
+  int vrIndex = 0;
+  for (int i = 0; i < TOTAL_CELLS; i++) {
+    if (CELL_TYPES[i] == VR) {
+      if (i == cell - 1) return String(VR_URLS[vrIndex]);
+      vrIndex++;
+    }
+  }
+  return "";
+}
 
 // ============================================================
 // GAME STATE
@@ -190,7 +207,7 @@ void rollDice() {
     currentEvent = "VR CHALLENGE! Put on headset";
     sendState();
     sendTeensy("F,2");
-    broadcast("CHALLENGE,VR,");
+    broadcast("CHALLENGE,VR," + vrUrlForCell(playerCell));
     return;
   }
 
@@ -310,7 +327,7 @@ button:disabled { opacity:.35; }
 <div class="card" id="vrCard">
   <div class="label">VR CHALLENGE</div>
   <p>Put on the Quest 3 headset and complete the challenge.</p>
-  <a class="btn" id="vrOpen" href="VR_GAME_URL_PLACEHOLDER" target="_blank">Open VR Game ↗</a>
+  <a class="btn" id="vrOpen" href="#" target="_blank">Open VR Game ↗</a>
   <button id="skipVr" onclick="send('SKIP')">⏭ SKIP</button>
 </div>
 
@@ -377,6 +394,8 @@ function connect() {
         triviaCard.style.display = "block";
         vrCard.style.display = "none";
       } else if (parts[1] == "VR") {
+        const vrUrl = parts.slice(2).join(",");
+        document.getElementById("vrOpen").href = vrUrl;
         vrCard.style.display = "block";
         triviaCard.style.display = "none";
       }
