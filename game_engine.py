@@ -28,6 +28,7 @@ from typing import Optional, Callable
 import config
 from gemma_adaptive import AdaptiveAI
 from serial_handler import SerialHandler
+import trivia_parser
 
 logger = logging.getLogger("game_engine")
 
@@ -75,6 +76,8 @@ class GameEngine:
         self.serial.on_event = self._on_arduino_event
 
         self.ai = AdaptiveAI()
+
+        self.trivia_questions = trivia_parser.parse_questions()
 
         self.players = {i: Player(id=i, position=1) for i in range(1, num_players + 1)}
         self.current_player_id = 1
@@ -131,6 +134,9 @@ class GameEngine:
             kind = "snake" if new_pos in config.SNAKES else "ladder"
             logger.info(f"Player {self.current_player_id} landed on a {kind} at {new_pos} — needs VR challenge")
             self.phase = "WAITING_FOR_VR"
+        elif hasattr(config, 'TRIVIA_CELLS') and new_pos in config.TRIVIA_CELLS:
+            logger.info(f"Player {self.current_player_id} landed on a trivia cell at {new_pos} — needs VR challenge")
+            self.phase = "WAITING_FOR_VR"
         else:
             self._advance_turn()
 
@@ -146,19 +152,34 @@ class GameEngine:
 
         player = self.players[self.current_player_id]
         stats = player.stats_for_gemma()
-        recommendation = self.ai.recommend_difficulty(stats)
+        board_state = {
+            "player_positions": [{"player": p.id, "row": 0, "col": p.position} for p in self.players.values()]
+        }
+        recommendation = self.ai.plan_next_turn(stats, board_state)
 
         player.difficulty = recommendation["recommended_difficulty"]
         self.pending_challenge_reason = recommendation.get("reason")
 
-        challenge_type = "ladder_bonus" if player.position in config.LADDERS else "snake_penalty"
+        if player.position in config.LADDERS:
+            challenge_type = "ladder_bonus"
+        elif player.position in config.SNAKES:
+            challenge_type = "snake_penalty"
+        else:
+            challenge_type = "trivia"
 
         challenge = {
             "player_id": player.id,
             "difficulty": player.difficulty,
             "challenge_type": challenge_type,
             "reason": self.pending_challenge_reason,
+            "selected_game": recommendation["vr_trivia_game"] if challenge_type == "trivia" else recommendation["vr_challenge_game"]
         }
+        
+        if challenge_type == "trivia":
+            q = trivia_parser.get_random_question(self.trivia_questions)
+            if q:
+                challenge["trivia_question"] = q
+                
         logger.info(f"Sending VR challenge: {challenge}")
 
         self.phase = "IN_VR"

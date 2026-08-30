@@ -30,7 +30,7 @@ logger = logging.getLogger("serial_handler")
 
 
 class SerialHandler:
-    def __init__(self, port: str = config.SERIAL_PORT, baud: int = config.SERIAL_BAUD):
+    def __init__(self, port: str = getattr(config, "SERIAL_PORT", "COM3"), baud: int = getattr(config, "SERIAL_BAUD", 115200)):
         self.port = port
         self.baud = baud
         self._ser: Optional[serial.Serial] = None

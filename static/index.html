@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MAVELI.AI - Physical-AI VR Game</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="background">
+        <div class="blob blob1"></div>
+        <div class="blob blob2"></div>
+    </div>
+    
+    <div class="dashboard">
+        <header>
+            <h1>MAVELI.AI</h1>
+            <p>Adaptive Onam VR Experience</p>
+        </header>
+
+        <div class="main-content">
+            <div class="glass-panel state-panel">
+                <h2>Game Status</h2>
+                <div class="status-indicator">
+                    <span id="phase-indicator" class="pulse">WAITING...</span>
+                </div>
+                <div class="player-info">
+                    <h3>Current Player: <span id="current-player-num">-</span></h3>
+                    <p>Position: <span id="current-player-pos">-</span></p>
+                </div>
+                <div class="maaveli-tracker">
+                    <p>Mahabali Joy Level</p>
+                    <div class="progress-bar">
+                        <div id="maaveli-fill" class="progress-fill"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass-panel action-panel">
+                <h2>VR Challenge</h2>
+                <div id="no-challenge" class="action-message">
+                    <p>Awaiting game engine events...</p>
+                    <button class="btn debug-btn" onclick="triggerRoll()">Roll Dice (Debug)</button>
+                </div>
+
+                <div id="active-challenge" class="action-message hidden">
+                    <h3 class="gradient-text">Challenge Ready!</h3>
+                    <div class="challenge-details">
+                        <p><strong>Game:</strong> <span id="chal-game">-</span></p>
+                        <p><strong>Difficulty:</strong> <span id="chal-diff">-</span></p>
+                        <p><strong>Reason:</strong> <span id="chal-reason">-</span></p>
+                    </div>
+                    <button id="launch-vr-btn" class="btn primary-btn">Launch in VR Headset</button>
+                    <button class="btn debug-btn" onclick="triggerResult(true)">Simulate VR Success</button>
+                    <button class="btn debug-btn" onclick="triggerResult(false)">Simulate VR Failure</button>
+                </div>
+                
+                <div id="trivia-container" class="hidden">
+                    <h3>Trivia Challenge!</h3>
+                    <p id="trivia-q" class="trivia-q-text"></p>
+                    <div id="trivia-opts" class="trivia-options"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const ws = new WebSocket(`ws://${window.location.hostname}:8000/ws`);
+        let currentChallenge = null;
+
+        ws.onmessage = function(event) {
+            const msg = JSON.parse(event.data);
+            if (msg.type === "state") {
+                updateState(msg.data);
+            } else if (msg.type === "challenge") {
+                showChallenge(msg.data);
+            }
+        };
+
+        function updateState(data) {
+            document.getElementById("phase-indicator").innerText = data.phase.replace(/_/g, ' ');
+            document.getElementById("current-player-num").innerText = data.current_player;
+            
+            const player = data.players.find(p => p.id === data.current_player);
+            if(player) {
+                document.getElementById("current-player-pos").innerText = player.position;
+            }
+            
+            document.getElementById("maaveli-fill").style.width = `${data.maaveli_state}%`;
+
+            if(data.phase !== "IN_VR" && data.phase !== "WAITING_FOR_VR") {
+                document.getElementById("active-challenge").classList.add("hidden");
+                document.getElementById("trivia-container").classList.add("hidden");
+                document.getElementById("no-challenge").classList.remove("hidden");
+            } else if (data.phase === "WAITING_FOR_VR") {
+                // For debug without hardware
+                if(document.getElementById("no-challenge").classList.contains("hidden") === false) {
+                    fetch('/debug/button/vr_ready', {method: 'POST'});
+                }
+            }
+        }
+
+        function showChallenge(data) {
+            currentChallenge = data;
+            document.getElementById("no-challenge").classList.add("hidden");
+            document.getElementById("active-challenge").classList.remove("hidden");
+            
+            const isTrivia = data.challenge_type === "trivia";
+            
+            document.getElementById("chal-game").innerText = data.selected_game || data.challenge_type;
+            document.getElementById("chal-diff").innerText = data.difficulty;
+            document.getElementById("chal-reason").innerText = data.reason || 'Random Event';
+
+            if(isTrivia && data.trivia_question) {
+                document.getElementById("trivia-container").classList.remove("hidden");
+                document.getElementById("trivia-q").innerText = data.trivia_question.question;
+                const optsDiv = document.getElementById("trivia-opts");
+                optsDiv.innerHTML = '';
+                
+                data.trivia_question.options.forEach((opt, idx) => {
+                    const btn = document.createElement('button');
+                    btn.className = 'btn trivia-btn';
+                    btn.innerText = opt;
+                    btn.onclick = () => handleTrivia(idx === data.trivia_question.correct_index);
+                    optsDiv.appendChild(btn);
+                });
+            } else {
+                document.getElementById("trivia-container").classList.add("hidden");
+            }
+            
+            document.getElementById("launch-vr-btn").onclick = () => {
+                const gameMap = {
+                    "uri_adi": "/uri-adi/uri-adi-vr.html",
+                    "vallamkali": "/vallamkali/vallamkali.html",
+                    "sadhya_memory": "/sadya-memory/sadya-memory.html",
+                    "pookalam_bloom": "/pookalam_bloom" // assuming path
+                };
+                const url = gameMap[data.selected_game] || `/${data.selected_game}`;
+                window.open(url, "_blank");
+            };
+        }
+
+        function triggerRoll() {
+            fetch('/debug/button/roll', {method: 'POST'});
+        }
+
+        function triggerResult(success) {
+            if(!currentChallenge) return;
+            fetch('/vr/result', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    player_id: currentChallenge.player_id,
+                    success: success,
+                    response_time_sec: 2.5,
+                    challenge_type: currentChallenge.challenge_type
+                })
+            });
+        }
+        
+        function handleTrivia(isCorrect) {
+            triggerResult(isCorrect);
+        }
+    </script>
+</body>
+</html>

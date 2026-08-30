@@ -26,6 +26,9 @@ LADDERS = {
     72: 91,
 }
 
+TRIVIA_CELLS = {5, 14, 21, 33, 42, 51, 64, 76, 81, 95}
+
+
 # 18x20 LED matrix geometry for dynamic RED/YELLOW VR zones
 BOARD_ROWS = 18
 BOARD_COLS = 20

@@ -1,0 +1,230 @@
+:root {
+    --bg-primary: #0a0a0a;
+    --bg-secondary: #111111;
+    --accent-red: #ff3b30;
+    --accent-yellow: #ffcc00;
+    --accent-green: #34c759;
+    --text-primary: #ffffff;
+    --text-secondary: #888888;
+    --glass-bg: rgba(255, 255, 255, 0.05);
+    --glass-border: rgba(255, 255, 255, 0.1);
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Outfit', sans-serif;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    overflow: hidden;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.background {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    overflow: hidden;
+}
+
+.blob {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0.5;
+    animation: moveBlob 20s infinite alternate;
+}
+
+.blob1 {
+    width: 40vw;
+    height: 40vw;
+    background: radial-gradient(circle, var(--accent-red), transparent);
+    top: -10%;
+    left: -10%;
+}
+
+.blob2 {
+    width: 30vw;
+    height: 30vw;
+    background: radial-gradient(circle, var(--accent-yellow), transparent);
+    bottom: -10%;
+    right: -10%;
+    animation-delay: -10s;
+}
+
+@keyframes moveBlob {
+    0% { transform: translate(0, 0) scale(1); }
+    100% { transform: translate(10vw, 10vh) scale(1.2); }
+}
+
+.dashboard {
+    width: 90%;
+    max-width: 1200px;
+    height: 85vh;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+header {
+    text-align: center;
+}
+
+header h1 {
+    font-size: 3rem;
+    margin: 0;
+    background: -webkit-linear-gradient(45deg, var(--accent-red), var(--accent-yellow));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    letter-spacing: 2px;
+}
+
+header p {
+    color: var(--text-secondary);
+    font-size: 1.2rem;
+    margin: 5px 0 0 0;
+}
+
+.main-content {
+    display: flex;
+    gap: 2rem;
+    flex: 1;
+}
+
+.glass-panel {
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    padding: 2rem;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+}
+
+.glass-panel h2 {
+    margin-top: 0;
+    font-weight: 600;
+    border-bottom: 1px solid var(--glass-border);
+    padding-bottom: 10px;
+}
+
+.pulse {
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 0.6; }
+    50% { opacity: 1; }
+    100% { opacity: 0.6; }
+}
+
+.status-indicator {
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--accent-yellow);
+    margin: 1rem 0;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 12px;
+    background: var(--bg-secondary);
+    border-radius: 10px;
+    overflow: hidden;
+    margin-top: 10px;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent-red), var(--accent-yellow));
+    width: 50%;
+    transition: width 0.5s ease-in-out;
+}
+
+.btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 10px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-family: inherit;
+    margin-bottom: 10px;
+}
+
+.primary-btn {
+    background: linear-gradient(45deg, var(--accent-red), var(--accent-yellow));
+    color: var(--bg-primary);
+    box-shadow: 0 4px 15px rgba(255, 59, 48, 0.4);
+}
+
+.primary-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(255, 59, 48, 0.6);
+}
+
+.debug-btn {
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    border: 1px solid var(--glass-border);
+}
+
+.debug-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+}
+
+.trivia-btn {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+    border: 1px solid var(--glass-border);
+    width: 100%;
+    text-align: left;
+}
+
+.trivia-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: scale(1.02);
+}
+
+.hidden {
+    display: none !important;
+}
+
+.challenge-details {
+    background: rgba(0, 0, 0, 0.2);
+    padding: 15px;
+    border-radius: 10px;
+    margin: 15px 0;
+}
+
+.challenge-details p {
+    margin: 5px 0;
+}
+
+.gradient-text {
+    background: -webkit-linear-gradient(45deg, var(--accent-red), var(--accent-yellow));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.trivia-q-text {
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin-bottom: 15px;
+}
+
+.trivia-options {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}

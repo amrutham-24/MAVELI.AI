@@ -18,10 +18,11 @@ from typing import Set
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 import config
 from models import VRResultIn, GameStateOut, ManualRollIn
-from esp32_handler import ESP32Handler, MockESP32Handler
+from serial_handler import SerialHandler, MockSerialHandler
 from game_engine import GameEngine
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(name)s] %(message)s")
@@ -32,6 +33,12 @@ USE_MOCK_ESP32 = True
 
 app = FastAPI(title="Snake & Ladder Physical-AI Backend")
 
+app.mount("/static", StaticFiles(directory="static"), name="static")
+app.mount("/uri-adi", StaticFiles(directory="uri-adi"), name="uri-adi")
+app.mount("/chenda", StaticFiles(directory="chenda"), name="chenda")
+app.mount("/vallamkali", StaticFiles(directory="vallamkali"), name="vallamkali")
+app.mount("/sadya-memory", StaticFiles(directory="sadya-memory"), name="sadya-memory")
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],           # tighten this for production / judging network
@@ -39,7 +46,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-esp32_handler = MockESP32Handler() if USE_MOCK_ESP32 else ESP32Handler()
+esp32_handler = MockSerialHandler() if USE_MOCK_ESP32 else SerialHandler()
 engine = GameEngine(esp32_handler)
 
 # ---------------------------------------------------------------------------
@@ -87,7 +94,7 @@ engine.on_challenge_ready = _on_challenge_ready
 async def startup():
     global _loop
     _loop = asyncio.get_event_loop()
-    await esp32_handler.start()
+    esp32_handler.start()
     logger.info(
         "Backend started. Waiting for ROLL button over ESP32 Wi-Fi "
         "(also starts the game)."
@@ -96,7 +103,7 @@ async def startup():
 
 @app.on_event("shutdown")
 async def shutdown():
-    await esp32_handler.stop()
+    esp32_handler.stop()
 
 
 # ---------------------------------------------------------------------------
@@ -155,7 +162,7 @@ async def reset_game():
 # ---------------------------------------------------------------------------
 @app.post("/debug/button/roll")
 async def debug_roll():
-    if not isinstance(esp32_handler, MockESP32Handler):
+    if not isinstance(esp32_handler, MockSerialHandler):
         raise HTTPException(400, "Debug button endpoints only work with USE_MOCK_ESP32=True")
     esp32_handler.fire(config.BTN_ROLL)
     return {"ok": True, "state": engine.to_dict()}
@@ -163,7 +170,7 @@ async def debug_roll():
 
 @app.post("/debug/button/vr_ready")
 async def debug_vr_ready():
-    if not isinstance(esp32_handler, MockESP32Handler):
+    if not isinstance(esp32_handler, MockSerialHandler):
         raise HTTPException(400, "Debug button endpoints only work with USE_MOCK_ESP32=True")
     esp32_handler.fire(config.BTN_VR_READY)
     return {"ok": True, "state": engine.to_dict()}
