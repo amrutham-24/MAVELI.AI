@@ -33,8 +33,8 @@ ObjectFLED leds(GRID_ROWS * GRID_COLS, canvas, LED_COLOR_ORDER, GRID_ROWS, rowPi
 // 4 cells across x 5 cells down = 20 cells, numbered 1-20 in
 // serpentine order starting bottom-left (cell 1).
 // ============================================================
-#define CELL_W 5
-#define CELL_H 4
+#define CELL_W 4
+#define CELL_H 5
 #define CELLS_ACROSS (GRID_COLS / CELL_W)     // 4
 #define CELLS_DOWN   (GRID_ROWS / CELL_H)     // 5
 #define TOTAL_CELLS  (CELLS_ACROSS * CELLS_DOWN) // 20
@@ -67,8 +67,9 @@ CRGB BLACK        = CRGB(0, 0, 0);
 // ============================================================
 #define PLAYER_POINTS 6
 const int PLAYER_SHAPE[PLAYER_POINTS][2] = { // {dx, dy} within the cell
-  {2, 0}, {2, 1}, {2, 2}, {2, 3},  // vertical bar
-  {1, 1}, {3, 1}                    // horizontal arms
+  {1, 1}, {2, 1},  // vertical bar
+  {1, 2}, {2, 2},
+  {1,3},{2,3}                   // horizontal arms
 };
 
 // ============================================================
