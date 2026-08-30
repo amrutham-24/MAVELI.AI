@@ -334,14 +334,18 @@ AFRAME.registerComponent('chenda-game', {
         this.after(2600, () => UIManager.showStart('PLAY AGAIN'));
 
         /* ---- board-game integration signal ---- */
-        window.dispatchEvent(new CustomEvent('chendaGameComplete', {
-            detail: {
-                success: true,
-                score: res.score,
-                accuracy: res.accuracy,
-                level: res.level
-            }
-        }));
+        const payload = {
+            success: true,
+            score: res.score,
+            accuracy: res.accuracy,
+            level: res.level
+        };
+        window.dispatchEvent(new CustomEvent('chendaGameComplete', { detail: payload }));
+        
+        // Also send to parent if hosted in an iframe
+        if (window.parent !== window) {
+            window.parent.postMessage({ type: 'chendaGameComplete', detail: payload }, '*');
+        }
     },
 
     /* ============ PUBLIC RESULT PAYLOAD (Gemma-ready) ============ */

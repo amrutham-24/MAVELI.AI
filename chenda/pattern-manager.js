@@ -13,10 +13,10 @@ window.PatternManager = {
 
     /* ---- tunable difficulty knobs ---- */
     CONFIG: {
-        perfectMs: 130,   // |error| <= this  -> PERFECT
-        goodMs: 270,   // |error| <= this  -> GOOD
-        missMs: 480,   // beyond this the expected hit is auto-MISS
-        earlyGraceMs: 200,   // hits earlier than this before a note are ignored, not penalised
+        perfectMs: 250,   // |error| <= this  -> PERFECT (was 130)
+        goodMs: 450,   // |error| <= this  -> GOOD (was 270)
+        missMs: 700,   // beyond this the expected hit is auto-MISS (was 480)
+        earlyGraceMs: 350,   // hits earlier than this before a note are ignored (was 200)
         memorizeMs: 900,   // "get ready" beat after the demo
         leadInMs: 1100,  // countdown before the player's turn starts
         tailMs: 900,   // grace after the last note before scoring closes
