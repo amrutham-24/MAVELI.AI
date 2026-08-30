@@ -1,14 +1,14 @@
 """
 main.py
-FastAPI backend tying together: Arduino (pyserial), the game engine, Gemma
-adaptive difficulty, and the VR website (WebSocket for pushed challenges +
-live state, REST for posting results back).
+FastAPI backend tying together: ESP32 (Wi-Fi WebSocket), the game engine,
+Gemma adaptive difficulty, and the VR website (WebSocket for pushed
+challenges + live state, REST for posting results back).
 
 Run:
     pip install -r requirements.txt
     uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 
-If you don't have the Arduino plugged in yet, set USE_MOCK_SERIAL = True
+If you don't have the ESP32 flashed/connected yet, set USE_MOCK_ESP32 = True
 below to develop/demo the whole loop without hardware.
 """
 
@@ -21,14 +21,14 @@ from fastapi.middleware.cors import CORSMiddleware
 
 import config
 from models import VRResultIn, GameStateOut, ManualRollIn
-from serial_handler import SerialHandler, MockSerialHandler
+from esp32_handler import ESP32Handler, MockESP32Handler
 from game_engine import GameEngine
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(name)s] %(message)s")
 logger = logging.getLogger("main")
 
-# Flip to True for development without an Arduino attached
-USE_MOCK_SERIAL = True
+# Flip to True for development without an ESP32 attached
+USE_MOCK_ESP32 = True
 
 app = FastAPI(title="Snake & Ladder Physical-AI Backend")
 
@@ -39,8 +39,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-serial_handler = MockSerialHandler() if USE_MOCK_SERIAL else SerialHandler()
-engine = GameEngine(serial_handler)
+esp32_handler = MockESP32Handler() if USE_MOCK_ESP32 else ESP32Handler()
+engine = GameEngine(esp32_handler)
 
 # ---------------------------------------------------------------------------
 # WebSocket connection management (VR website + any spectator/LED dashboard)
@@ -61,8 +61,8 @@ async def _broadcast(payload: dict):
 
 
 def _schedule_broadcast(payload: dict):
-    """Thread-safe bridge: game_engine callbacks fire from the serial reader
-    thread, but broadcasting must happen on the asyncio event loop."""
+    """Thread-safe bridge: game_engine callbacks fire from the ESP32 reader
+    thread/task, but broadcasting must happen on the asyncio event loop."""
     if _loop is None:
         return
     asyncio.run_coroutine_threadsafe(_broadcast(payload), _loop)
@@ -87,13 +87,16 @@ engine.on_challenge_ready = _on_challenge_ready
 async def startup():
     global _loop
     _loop = asyncio.get_event_loop()
-    serial_handler.start()
-    logger.info("Backend started. Waiting for ROLL button (also starts the game).")
+    await esp32_handler.start()
+    logger.info(
+        "Backend started. Waiting for ROLL button over ESP32 Wi-Fi "
+        "(also starts the game)."
+    )
 
 
 @app.on_event("shutdown")
 async def shutdown():
-    serial_handler.stop()
+    await esp32_handler.stop()
 
 
 # ---------------------------------------------------------------------------
@@ -146,23 +149,23 @@ async def reset_game():
 
 
 # ---------------------------------------------------------------------------
-# Debug helpers — simulate button presses without touching the Arduino.
+# Debug helpers — simulate button presses without touching the ESP32.
 # Handy while wiring up the VR site / Gemma before hardware is ready,
-# or for a backup demo path if a servo/wire fails on stage.
+# or for a backup demo path if Wi-Fi/a servo fails on stage.
 # ---------------------------------------------------------------------------
 @app.post("/debug/button/roll")
 async def debug_roll():
-    if not isinstance(serial_handler, MockSerialHandler):
-        raise HTTPException(400, "Debug button endpoints only work with USE_MOCK_SERIAL=True")
-    serial_handler.fire(config.BTN_ROLL)
+    if not isinstance(esp32_handler, MockESP32Handler):
+        raise HTTPException(400, "Debug button endpoints only work with USE_MOCK_ESP32=True")
+    esp32_handler.fire(config.BTN_ROLL)
     return {"ok": True, "state": engine.to_dict()}
 
 
 @app.post("/debug/button/vr_ready")
 async def debug_vr_ready():
-    if not isinstance(serial_handler, MockSerialHandler):
-        raise HTTPException(400, "Debug button endpoints only work with USE_MOCK_SERIAL=True")
-    serial_handler.fire(config.BTN_VR_READY)
+    if not isinstance(esp32_handler, MockESP32Handler):
+        raise HTTPException(400, "Debug button endpoints only work with USE_MOCK_ESP32=True")
+    esp32_handler.fire(config.BTN_VR_READY)
     return {"ok": True, "state": engine.to_dict()}
 
 
