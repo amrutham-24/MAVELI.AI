@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <title>Chenda Master — Onam VR</title>
+    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <div id="desktopHelp">
+        <b>🥁 DESKTOP TEST MODE</b><br>
+        <span class="k">A</span> left stick &nbsp; <span class="k">D</span> right stick &nbsp; <span
+            class="k">SPACE</span> start / next<br>
+        <span class="dim">Put on a Quest and hit VR for the real thing.</span>
+    </div>
+
+    <a-scene renderer="colorManagement:true; antialias:true; foveationLevel:2" background="color:#0a0704"
+        vr-mode-ui="enterVRButton:#vrBtn" chenda-game>
+
+        <!-- ============ ASSETS ============ -->
+        <a-assets timeout="8000">
+            <!-- Audio is synthesized in AudioManager (WebAudio) so there are zero asset
+         downloads and zero CORS problems. Drop real samples in assets/audio/
+         and set AudioManager.useSamples = true to switch over. -->
+        </a-assets>
+
+        <!-- ============ LIGHTING ============ -->
+        <a-entity light="type:ambient; color:#4a3320; intensity:0.9"></a-entity>
+        <a-entity light="type:point; color:#ffb45e; intensity:1.5; distance:12; decay:1.4"
+            position="0 3.2 0.6"></a-entity>
+        <a-entity light="type:point; color:#ff6a2a; intensity:0.7; distance:8" position="-2.4 1.4 1.6"></a-entity>
+        <a-entity light="type:point; color:#ffd27a; intensity:0.7; distance:8" position="2.4 1.4 1.6"></a-entity>
+
+        <!-- ============ ENVIRONMENT ============ -->
+        <a-circle radius="9" rotation="-90 0 0" position="0 0 0" material="color:#1a1008; roughness:1"></a-circle>
+        <!-- pookalam floor rangoli, flat rings = cheap -->
+        <a-ring position="0 0.01 0" rotation="-90 0 0" radius-inner="1.9" radius-outer="2.5"
+            material="color:#e0a03a; opacity:0.55; shader:flat; side:double"></a-ring>
+        <a-ring position="0 0.012 0" rotation="-90 0 0" radius-inner="2.55" radius-outer="2.85"
+            material="color:#c2410c; opacity:0.45; shader:flat; side:double"></a-ring>
+        <a-ring position="0 0.014 0" rotation="-90 0 0" radius-inner="2.9" radius-outer="3.05"
+            material="color:#f5e6b8; opacity:0.3; shader:flat; side:double"></a-ring>
+
+        <!-- hanging lamps (nilavilakku vibe) -->
+        <a-entity position="-2.6 0 -1.2" lamp></a-entity>
+        <a-entity position="2.6 0 -1.2" lamp></a-entity>
+
+        <!-- ============ CHENDA ============ -->
+        <a-entity id="chenda" position="0 1.05 -0.62" rotation="-18 0 0">
+            <!-- body -->
+            <a-cylinder id="drumBody" radius="0.30" height="0.62"
+                material="color:#6b3d1f; roughness:0.85; metalness:0.05"></a-cylinder>
+            <!-- membrane (top / playing surface) -->
+            <a-cylinder id="membrane" position="0 0.315 0" radius="0.305" height="0.02"
+                material="color:#e8d5a8; roughness:0.7"></a-cylinder>
+            <!-- rims -->
+            <a-torus position="0 0.315 0" rotation="90 0 0" radius="0.305" radius-tubular="0.022" segments-radial="8"
+                segments-tubular="24" material="color:#3a2210; roughness:0.9"></a-torus>
+            <a-torus position="0 -0.31 0" rotation="90 0 0" radius="0.305" radius-tubular="0.022" segments-radial="8"
+                segments-tubular="24" material="color:#3a2210; roughness:0.9"></a-torus>
+            <!-- rope lacing (cheap: 8 thin boxes) -->
+            <a-entity rope-lacing></a-entity>
+
+            <!-- INVISIBLE HIT ZONE: sphere sitting on the membrane -->
+            <a-sphere id="hitZone" position="0 0.34 0" radius="0.34" visible="false"></a-sphere>
+
+            <!-- hit flash ring -->
+            <a-ring id="hitFlash" position="0 0.34 0" rotation="-90 0 0" radius-inner="0.10" radius-outer="0.30"
+                visible="false" material="color:#ffcf6b; shader:flat; opacity:0.9; side:double"></a-ring>
+        </a-entity>
+
+        <!-- ============ WORLD-SPACE UI ============ -->
+        <a-entity id="ui" position="0 1.95 -1.55" rotation="-8 0 0">
+            <a-plane id="uiPanel" width="2.1" height="1.0"
+                material="color:#000000; opacity:0.55; shader:flat"></a-plane>
+
+            <a-text id="txtTitle" value="🥁 CHENDA MASTER" align="center" position="0 0.34 0.01" width="2.6"
+                color="#ffcf6b" font="kelsonsans"></a-text>
+            <a-text id="txtSub" value="Listen. Remember. Play." align="center" position="0 0.14 0.01" width="1.9"
+                color="#f5e6b8"></a-text>
+            <a-text id="txtPattern" value="" align="center" position="0 -0.05 0.01" width="3.2" color="#ffffff"
+                font="kelsonsans"></a-text>
+            <a-text id="txtFeedback" value="" align="center" position="0 -0.30 0.01" width="2.4" color="#7ef29a"
+                font="kelsonsans"></a-text>
+
+            <!-- START button -->
+            <a-entity id="startBtn" position="0 -0.34 0.02" class="clickable" visible="true"
+                geometry="primitive: plane; width: 0.66; height: 0.19" material="color:#c2410c; shader:flat">
+                <a-text value="START" align="center" position="0 0 0.01" width="1.6" color="#fff"></a-text>
+            </a-entity>
+        </a-entity>
+
+        <!-- HUD strip: level / score / combo -->
+        <a-entity position="0 0.62 -1.35" rotation="14 0 0">
+            <a-text id="txtHud" value="" align="center" position="0 0 0" width="2.2" color="#e0a03a"></a-text>
+        </a-entity>
+
+        <!-- ============ PLAYER RIG ============ -->
+        <a-entity id="rig" position="0 0 0.42">
+            <a-entity id="head" camera look-controls position="0 1.6 0" wasd-controls="acceleration:20">
+                <a-cursor raycaster="objects: .clickable" fuse="false" material="color:#ffcf6b; shader:flat"
+                    scale="0.7 0.7 0.7"></a-cursor>
+            </a-entity>
+
+            <!-- LEFT stick -->
+            <a-entity id="leftHand" laser-controls="hand:left" raycaster="objects:.clickable; far:6" drumstick="hand:L"
+                position="-0.28 1.15 -0.25"></a-entity>
+
+            <!-- RIGHT stick -->
+            <a-entity id="rightHand" laser-controls="hand:right" raycaster="objects:.clickable; far:6"
+                drumstick="hand:R" position="0.28 1.15 -0.25"></a-entity>
+        </a-entity>
+
+    </a-scene>
+
+    <script src="audio-manager.js"></script>
+    <script src="pattern-manager.js"></script>
+    <script src="ui-manager.js"></script>
+    <script src="drum-controller.js"></script>
+    <script src="game.js"></script>
+</body>
+
+</html>
