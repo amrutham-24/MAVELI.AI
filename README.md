@@ -83,4 +83,6 @@ graph TD
   <img src="image%20documentation/vl.jpeg" width="400" alt="Vallamkali" />
   <img src="image%20documentation/ur.jpeg" width="400" alt="Uri-Adi" />
   <img src="image%20documentation/sl.jpeg" width="400" alt="Snake & Ladder" />
+  <img src="image%20documentation/sc.jpeg" width="400" alt="Screenshot 1" />
+  <img src="image%20documentation/sc2.jpeg" width="400" alt="Screenshot 2" />
 </div>
