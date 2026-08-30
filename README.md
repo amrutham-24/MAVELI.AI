@@ -113,3 +113,14 @@ uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 <div align="center">
   <p><i>That last step — an AI decision changing a physical object in the real world — is the Physical-AI story.</i></p>
 </div>
+
+---
+
+## 📸 Image Documentation
+
+<div align="center">
+  <img src="image%20documentation/dev.jpeg" width="400" alt="Overview" />
+  <img src="image%20documentation/vl.jpeg" width="400" alt="Vallamkali" />
+  <img src="image%20documentation/ur.jpeg" width="400" alt="Uri-Adi" />
+  <img src="image%20documentation/sl.jpeg" width="400" alt="Snake & Ladder" />
+</div>
