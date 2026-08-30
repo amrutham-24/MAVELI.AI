@@ -2,11 +2,12 @@
   <img src="https://img.icons8.com/?size=100&id=D0W12kI7fU57&format=png&color=000000" width="80" alt="logo"/>
   <h1>🌺 MAVELI.AI 🌺</h1>
   <p><strong>A Next-Gen Adaptive Physical-AI Onam VR Experience</strong></p>
+  
+  <h3><a href="https://youtube.com/shorts/M2vyXcVqYc8?si=DPlb64-iao1e1IXq">▶️ Watch the YouTube Demo</a></h3>
 
   <p>
     <a href="#features">Features</a> •
     <a href="#architecture">Architecture</a> •
-    <a href="#setup">Setup & Installation</a> •
     <a href="#gameplay-loop">Gameplay Loop</a>
   </p>
 
