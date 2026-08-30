@@ -64,47 +64,7 @@ graph TD
 
 ---
 
-## 🚀 Setup & Installation
 
-### 1. Backend Setup
-Ensure you have Python 3.10+ installed.
-
-```bash
-git clone https://github.com/amrutham-24/MAVELI.AI.git
-cd MAVELI.AI
-
-# Create virtual environment (optional but recommended)
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-
-# Install dependencies
-pip install -r requirements.txt
-```
-
-### 2. Configure Gemma (Adaptive AI)
-Gemma runs locally via Ollama to ensure offline reliability and low latency.
-```bash
-ollama pull gemma3:4b
-ollama serve
-```
-> [!TIP]
-> If Ollama is unavailable, the system safely falls back to a built-in heuristic engine so your demo will never break!
-
-### 3. Hardware Configuration (Optional)
-If you are connecting the physical Arduino board, ensure `config.py` has the correct `SERIAL_PORT` and `SERIAL_BAUD`. 
-If you are running a software-only demo, `main.py` defaults to `USE_MOCK_ESP32 = True`.
-
-### 4. Run the Server
-```bash
-uvicorn main:app --host 0.0.0.0 --port 8000 --reload
-```
-
-### 5. Launch the Experience
-1. Open a browser and navigate to **[http://localhost:8000/static/index.html](http://localhost:8000/static/index.html)**.
-2. If using a Meta Quest 3, open the same URL (replace `localhost` with your laptop's local IP) in the Quest Browser.
-3. Use the **Roll Dice** button on the dashboard (or press the physical button on the board) to play!
-
----
 
 ## 🔄 The Gameplay Loop
 
