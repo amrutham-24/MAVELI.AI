@@ -33,7 +33,11 @@ Powered by **Gemma** (via Ollama), the game continuously tracks player performan
 
 - 🎮 **Physical-AI Integration:** Real-world button presses and hardware interact directly with VR environments and LLM decision-making.
 - 🧠 **Adaptive Difficulty Engine:** Uses Google's Gemma to analyze player statistics (response times, success rates) and auto-tune the difficulty of VR challenges in real time.
-- 🥽 **Immersive WebXR Games:** Play dynamic mini-games directly in the browser ([Uri-Adi](https://uri-adi.vercel.app/), [Vallamkali](https://vallamkali.vercel.app/), [Sadya Memory](https://level-2-memory.vercel.app/), [Chenda Master](https://chenda.vercel.app/)).
+- 🥽 **Immersive WebXR Games:** Play dynamic mini-games directly in the browser:
+  - [Uri-Adi](https://uri-adi.vercel.app/)
+  - [Vallamkali](https://vallamkali.vercel.app/)
+  - [Sadya Memory](https://level-2-memory.vercel.app/)
+  - [Chenda Master](https://chenda.vercel.app/)
 - 🧩 **Trivia Engine:** Lands on a Trivia cell? The backend parses a rich markdown-based trivia pool and quizzes you on Onam facts!
 - 🖥️ **Premium Dashboard:** A beautiful, responsive glassmorphism dashboard that acts as the referee screen and VR game launcher.
 - 🤖 **Servo & LED Matrix Control:** Sends direct commands to an Arduino to move a Mahabali servo and highlight zones on an 18x20 LED board.
