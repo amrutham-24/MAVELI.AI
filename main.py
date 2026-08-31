@@ -13,6 +13,7 @@ below to develop/demo the whole loop without hardware.
 """
 
 import asyncio
+import os
 import logging
 from typing import Set
 
@@ -25,11 +26,34 @@ from models import VRResultIn, GameStateOut, ManualRollIn
 from serial_handler import SerialHandler, MockSerialHandler
 from game_engine import GameEngine
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(name)s] %(message)s")
+# ---------------------------------------------------------------------------
+# Logging
+# ---------------------------------------------------------------------------
+# Root logging config — controls the default format/level for any logger
+# that doesn't set its own (uvicorn's own loggers manage themselves).
+logging.basicConfig(
+    level=logging.DEBUG,
+    format="%(asctime)s [%(name)s] %(levelname)s: %(message)s",
+    datefmt="%H:%M:%S",
+)
+
 logger = logging.getLogger("main")
 
-# Flip to True for development without an ESP32 attached
-USE_MOCK_ESP32 = True
+# Explicitly ensure the game_engine logger (where Gemma prompt/response
+# logging lives, e.g. `logger.info(f"[GEMMA PROMPT]...")`) is set to DEBUG
+# and propagates up to the root handler configured above, so those lines
+# reliably show up on your terminal regardless of import order.
+gemma_logger = logging.getLogger("game_engine")
+gemma_logger.setLevel(logging.DEBUG)
+gemma_logger.propagate = True
+
+# Quiet down noisy third-party loggers if needed (uncomment if httpx/requests
+# spam the terminal and drown out the Gemma prompt/response logs).
+# logging.getLogger("httpx").setLevel(logging.WARNING)
+# logging.getLogger("urllib3").setLevel(logging.WARNING)
+
+# Flip to True for development without an ESP32 attached (defaults to False for physical setup)
+USE_MOCK_ESP32 = os.getenv("USE_MOCK_ESP32", "False").lower() in ("true", "1", "yes")
 
 app = FastAPI(title="Snake & Ladder Physical-AI Backend")
 

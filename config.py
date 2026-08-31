@@ -30,9 +30,9 @@ TRIVIA_CELLS = {5, 14, 21, 33, 42, 51, 64, 76, 81, 95}
 
 
 # 18x20 LED matrix geometry for dynamic RED/YELLOW VR zones
-BOARD_ROWS = 18
+BOARD_ROWS = 20
 BOARD_COLS = 20
-ZONE_SIZE = (4, 3)     # (height, width) of a VR trigger zone — red or yellow
+ZONE_SIZE = (5, 4)     # (height, width) of a VR trigger zone — red or yellow
 PLAYER_SIZE = (3, 2)   # (height, width) of a player's piece footprint on the matrix
 
 # VR game pools used by gemma_adaptive.py's plan_next_turn()
@@ -56,8 +56,8 @@ WHEEL_POSITIONS = DICE_MAX
 # ---------------------------------------------------------------------------
 # ESP32 (Wi-Fi) — replaces SERIAL_PORT / SERIAL_BAUD
 # ---------------------------------------------------------------------------
-ESP32_IP = "192.168.1.50"      # set a static IP (or DHCP reservation) on the ESP32
-ESP32_PORT = 8765
+ESP32_IP = "192.168.4.1"      # set a static IP (or DHCP reservation) on the ESP32
+ESP32_PORT = 81
 ESP32_PROTOCOL = "ws"          # WebSocket, not raw TCP/HTTP polling
 ESP32_RECONNECT_DELAY_SEC = 2.0
 
@@ -78,7 +78,7 @@ CMD_ZONE_CLEAR = "ZONE_CLEAR"  # ZONE_CLEAR,<RED|YELLOW>
 # ---------------------------------------------------------------------------
 GEMMA_MODE = "ollama"                 # "ollama" | "heuristic_only"
 OLLAMA_URL = "http://localhost:11434/api/generate"
-OLLAMA_MODEL = "gemma3:4b"            # bumped from gemma2:2b — your RTX has headroom
+OLLAMA_MODEL = "gemma2:2b"            # bumped from gemma2:2b — your RTX has headroom
 GEMMA_TIMEOUT_SEC = 4.0
 
 DIFFICULTY_LEVELS = ["EASY", "MEDIUM", "HARD", "HARD_PLUS"]
@@ -89,4 +89,4 @@ DEFAULT_DIFFICULTY = "MEDIUM"
 # ---------------------------------------------------------------------------
 HOST = "0.0.0.0"
 PORT = 8000
-NUM_PLAYERS = 4
+NUM_PLAYERS = 1

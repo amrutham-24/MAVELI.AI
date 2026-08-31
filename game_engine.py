@@ -27,7 +27,9 @@ from typing import Optional, Callable
 
 import config
 from gemma_adaptive import AdaptiveAI
+from esp32_handler import ESP32Handler
 from serial_handler import SerialHandler
+from competence import PlayerCompetenceTracker
 import trivia_parser
 
 logger = logging.getLogger("game_engine")
@@ -71,11 +73,12 @@ class Player:
 
 
 class GameEngine:
-    def __init__(self, serial_handler: SerialHandler, num_players: int = config.NUM_PLAYERS):
+    def __init__(self, serial_handler: ESP32Handler, num_players: int = config.NUM_PLAYERS):
         self.serial = serial_handler
         self.serial.on_event = self._on_arduino_event
 
         self.ai = AdaptiveAI()
+        self.competence = PlayerCompetenceTracker()
 
         self.trivia_questions = trivia_parser.parse_questions()
 
@@ -116,8 +119,13 @@ class GameEngine:
             logger.info("Game already over, ignoring ROLL.")
             return
 
-        roll = random.randint(config.DICE_MIN, config.DICE_MAX)
-        logger.info(f"Player {self.current_player_id} rolled {roll}")
+        if hasattr(self, "_next_rigged_roll") and self._next_rigged_roll is not None:
+            roll = self._next_rigged_roll
+            self._next_rigged_roll = None
+            logger.info(f"Player {self.current_player_id} rolled RIGGED roll: {roll}")
+        else:
+            roll = random.randint(config.DICE_MIN, config.DICE_MAX)
+            logger.info(f"Player {self.current_player_id} rolled {roll}")
 
         self.serial.send_spin(roll)
 
@@ -151,14 +159,20 @@ class GameEngine:
             return
 
         player = self.players[self.current_player_id]
-        stats = player.stats_for_gemma()
-        board_state = {
-            "player_positions": [{"player": p.id, "row": 0, "col": p.position} for p in self.players.values()]
-        }
-        recommendation = self.ai.plan_next_turn(stats, board_state)
+        stats = self.competence.get_stats(player.id)
 
-        player.difficulty = recommendation["recommended_difficulty"]
-        self.pending_challenge_reason = recommendation.get("reason")
+        if hasattr(self, "_next_vr_game") and self._next_vr_game is not None:
+            player.difficulty = self._next_difficulty or config.DEFAULT_DIFFICULTY
+            vr_game = self._next_vr_game
+            self._next_vr_game = None
+            self._next_difficulty = None
+            logger.info(f"Using pre-planned VR game {vr_game} and difficulty {player.difficulty}")
+        else:
+            recommendation = self.ai.recommend_difficulty(stats)
+            player.difficulty = recommendation.get("recommended_difficulty", config.DEFAULT_DIFFICULTY)
+            self.pending_challenge_reason = recommendation.get("reason")
+            vr_game = recommendation.get("vr_challenge_game", "uriyadi")
+            logger.info(f"Dynamically generated difficulty {player.difficulty} and game {vr_game}")
 
         if player.position in config.LADDERS:
             challenge_type = "ladder_bonus"
@@ -171,8 +185,9 @@ class GameEngine:
             "player_id": player.id,
             "difficulty": player.difficulty,
             "challenge_type": challenge_type,
+            "vr_game": vr_game,
             "reason": self.pending_challenge_reason,
-            "selected_game": recommendation["vr_trivia_game"] if challenge_type == "trivia" else recommendation["vr_challenge_game"]
+            "selected_game": vr_game,
         }
         
         if challenge_type == "trivia":
@@ -205,6 +220,36 @@ class GameEngine:
         player.response_times.append(response_time_sec)
         if challenge_type == "trivia":
             player.trivia_results.append(success)
+
+        # Record result and plan based on competence
+        self.competence.record(player_id, success, response_time_sec, challenge_type or "uriyadi")
+        stats = self.competence.get_stats(player_id)
+
+        board_state = {
+            "player_positions": [
+                {
+                    "player": p.id,
+                    "position": p.position,
+                    "row": (p.position - 1) // 10,
+                    "col": (p.position - 1) % 10 if ((p.position - 1) // 10) % 2 == 0 else 9 - ((p.position - 1) % 10)
+                }
+                for p in self.players.values()
+            ]
+        }
+
+        plan = self.ai.plan_next_turn(stats, board_state, vr_result={
+            "success": success, "response_time_sec": response_time_sec, "game": challenge_type or "uriyadi"
+        })
+
+        self._next_rigged_roll = plan.get("rigged_roll")
+        self._next_vr_game = plan.get("vr_game")
+        self._next_difficulty = plan.get("difficulty")
+        self.pending_challenge_reason = plan.get("reason")
+
+        # Push plan["rigged_roll"] to ESP32 immediately (spin command)
+        if self._next_rigged_roll is not None:
+            logger.info(f"Pushing rigged roll {self._next_rigged_roll} to ESP32 wheel.")
+            self.serial.send_spin(self._next_rigged_roll)
 
         square = player.position
         if success:
